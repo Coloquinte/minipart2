@@ -76,7 +76,7 @@ Hypergraph Hypergraph::readHmetis(istream &s) {
         if (ss.fail()) continue;
         demands.push_back(w);
       }
-      if (demands.size() != 1) throw std::runtime_error("All nodes should have exactly one weight");
+      if (demands.size() != 1) throw runtime_error("All nodes should have exactly one weight");
       ret.nodeWeights_.push_back(demands.front());
       demands.clear();
     }

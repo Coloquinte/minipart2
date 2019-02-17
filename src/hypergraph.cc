@@ -93,36 +93,37 @@ void Hypergraph::constructHedges() {
   }
 }
 
-Index Hypergraph::metricsCut(const std::vector<Index> &solution) const {
+Index Hypergraph::metricsCut(const vector<Index> &solution) const {
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
-    if (cut(solution, hedge)) ++ret;
+    if (cut(solution, hedge))
+      ret += hedgeWeight(hedge);
   }
   return ret;
 }
 
-Index Hypergraph::metricsSoed(const std::vector<Index> &solution) const {
+Index Hypergraph::metricsSoed(const vector<Index> &solution) const {
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
-    ret += degree(solution, hedge);
+    ret += hedgeWeight(hedge) * degree(solution, hedge);
   }
   return ret;
 }
 
-Index Hypergraph::metricsConnectivity(const std::vector<Index> &solution) const {
+Index Hypergraph::metricsConnectivity(const vector<Index> &solution) const {
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
-    ret += (degree(solution, hedge) - 1);
+    ret += hedgeWeight(hedge) * (degree(solution, hedge) - 1);
   }
   return ret;
 }
 
-Index Hypergraph::metricsModularity(const std::vector<Index> &solution) const {
+Index Hypergraph::metricsModularity(const vector<Index> &solution) const {
   Index ret = 0;
   return ret;
 }
 
-bool Hypergraph::cut(const std::vector<Index> &solution, Index hedge) const {
+bool Hypergraph::cut(const vector<Index> &solution, Index hedge) const {
   unordered_set<Index> parts;
   for (Index node : hedgeNodes(hedge)) {
     parts.insert(solution[node]);
@@ -130,7 +131,7 @@ bool Hypergraph::cut(const std::vector<Index> &solution, Index hedge) const {
   return parts.size() > 1;
 }
 
-Index Hypergraph::degree(const std::vector<Index> &solution, Index hedge) const {
+Index Hypergraph::degree(const vector<Index> &solution, Index hedge) const {
   unordered_set<Index> parts;
   for (Index node : hedgeNodes(hedge)) {
     parts.insert(solution[node]);
