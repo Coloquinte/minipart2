@@ -3,6 +3,7 @@
 
 #include <sstream>
 #include <iostream>
+#include <algorithm>
 
 using namespace std;
 
@@ -58,6 +59,8 @@ Hypergraph Hypergraph::readHmetis(istream &s) {
         if (n == 0) throw runtime_error("Parsed pin index cannot be 0");
         nodes.push_back(n-1);
     }
+    sort(nodes.begin(), nodes.end());
+    nodes.resize(unique(nodes.begin(), nodes.end()) - nodes.begin());
     if (nodes.empty()) throw runtime_error("No node on the line");
     ret.hedgeWeights_.push_back(w);
     ret.hedgeToNodes_.push_back(nodes);

@@ -15,6 +15,8 @@ int main(int argc, char **argv) {
 
   ifstream f(argv[1]);
   Hypergraph hg = Hypergraph::readHmetis(f);
+  hg.checkConsistency();
+  hg.mergeParallelHedges();
 
   ofstream of("test.hgr");
   hg.writeHmetis(of);

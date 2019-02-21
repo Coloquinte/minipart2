@@ -23,13 +23,13 @@ class Hypergraph {
   Index hedgeWeight (Index hedge) const { return hedgeWeights_[hedge]; }
   Index nodeWeight  (Index node)  const { return nodeWeights_[node]; }
 
-  // Coarsening features and metrics
   Hypergraph coarsen(const std::vector<Index> &coarsening) const;
+  void mergeParallelHedges();
 
+  // Metrics
   Index metricsCut(const std::vector<Index> &solution) const;
   Index metricsSoed(const std::vector<Index> &solution) const;
   Index metricsConnectivity(const std::vector<Index> &solution) const;
-  Index metricsModularity(const std::vector<Index> &solution) const;
 
   // IO functions
   static Hypergraph readHmetis(std::istream &);

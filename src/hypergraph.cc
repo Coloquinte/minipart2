@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <stdexcept>
 #include <unordered_set>
+#include <unordered_map>
 
 using namespace std;
 
@@ -40,7 +41,7 @@ Hypergraph Hypergraph::coarsen(const vector<Index> &coarsening) const {
     pins.clear();
   }
 
-  ret.constructNodes();
+  ret.mergeParallelHedges();
 
   return ret;
 }
@@ -56,12 +57,18 @@ void Hypergraph::checkConsistency() const {
       if (hedge < 0 || hedge >= nHedges())
         throw runtime_error("Invalid hedge value");
     }
+    unordered_set<Index> uq(node.begin(), node.end());
+    if (uq.size() != node.size())
+        throw runtime_error("Duplicate hedges in a node");
   }
   for (const vector<Index> &hedge : hedgeToNodes_) {
     for (Index node : hedge) {
       if (node < 0 || node >= nNodes())
         throw runtime_error("Invalid node value");
     }
+    unordered_set<Index> uq(hedge.begin(), hedge.end());
+    if (uq.size() != hedge.size())
+        throw runtime_error("Duplicate nodes in an hedge");
   }
 
   // TODO: check that there is a bidirectional mapping between nodes and hedges
@@ -76,6 +83,7 @@ Index Hypergraph::nPins() const {
 }
 
 void Hypergraph::constructNodes() {
+  nodeToHedges_.clear();
   nodeToHedges_.resize(nodeWeights_.size());
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
     for (Index node : hedgeNodes(hedge)) {
@@ -85,6 +93,7 @@ void Hypergraph::constructNodes() {
 }
 
 void Hypergraph::constructHedges() {
+  hedgeToNodes_.clear();
   hedgeToNodes_.resize(hedgeWeights_.size());
   for (Index node = 0; node < nHedges(); ++node) {
     for (Index hedge : nodeHedges(node)) {
@@ -118,11 +127,6 @@ Index Hypergraph::metricsConnectivity(const vector<Index> &solution) const {
   return ret;
 }
 
-Index Hypergraph::metricsModularity(const vector<Index> &solution) const {
-  Index ret = 0;
-  return ret;
-}
-
 bool Hypergraph::cut(const vector<Index> &solution, Index hedge) const {
   unordered_set<Index> parts;
   for (Index node : hedgeNodes(hedge)) {
@@ -137,6 +141,64 @@ Index Hypergraph::degree(const vector<Index> &solution, Index hedge) const {
     parts.insert(solution[node]);
   }
   return parts.size();
+}
+
+namespace {
+class HedgeHasher {
+ public:
+  HedgeHasher(const Hypergraph &hypergraph)
+    : hypergraph_(hypergraph) {}
+
+  size_t operator()(const Index &hedge) const {
+    // FNV hash
+    uint64_t magic = 1099511628211llu;
+    uint64_t ret = 0;
+    for (Index n : hypergraph_.hedgeNodes(hedge)) {
+      ret = (ret ^ n) * magic;
+    }
+    return ret;
+  }
+
+ private:
+  Hypergraph hypergraph_;
+};
+
+class HedgeComparer {
+ public:
+  HedgeComparer(const Hypergraph &hypergraph)
+    : hypergraph_(hypergraph) {}
+
+  bool operator()(const Index &h1, const Index &h2) const {
+    return hypergraph_.hedgeNodes(h1) == hypergraph_.hedgeNodes(h2);
+  }
+
+ private:
+  Hypergraph hypergraph_;
+};
+}
+
+void Hypergraph::mergeParallelHedges() {
+  vector<vector<Index> > newHedges;
+  vector<Index> newWeights;
+
+  unordered_map<Index, Index, HedgeHasher, HedgeComparer> hedgeWeightMap(nHedges(), HedgeHasher(*this), HedgeComparer(*this));
+  for (Index hedge = 0; hedge < nHedges(); ++hedge) {
+    Index ind = newHedges.size();
+    auto p = hedgeWeightMap.emplace(hedge, ind);
+    if (p.second) {
+      newHedges.push_back(hedgeNodes(hedge));
+      newWeights.push_back(hedgeWeight(hedge));
+    }
+    else {
+      // An equivalent hyperedge exists already
+      newWeights[p.first->second] += hedgeWeight(hedge);
+    }
+  }
+
+  hedgeToNodes_ = newHedges;
+  hedgeWeights_ = newWeights;
+
+  constructNodes();
 }
 
 } // End namespace minipart
