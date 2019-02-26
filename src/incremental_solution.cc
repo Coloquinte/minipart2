@@ -6,10 +6,11 @@
 using namespace std;
 
 namespace minipart {
-IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, const vector<Index> &solution, const vector<Index> &partitionCapacities)
+IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, vector<Index> &solution, const vector<Index> &partitionCapacities)
 : hypergraph_(hypergraph)
 , solution_(solution)
 , partitionCapacities_(partitionCapacities) {
+  assert (hypergraph_.nNodes() == (Index) solution_.size());
   partitionDemands_ = computePartitionDemands();
   hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition();
   hedgeDegrees_ = computeHedgeDegrees();
@@ -75,7 +76,7 @@ Index IncrementalSolution::metricsSumOverflow() const {
 }
 
 void IncrementalSolution::move(Index node, Index to) {
-  assert (to < nPartitions() && to > 0);
+  assert (to < nPartitions() && to >= 0);
   Index from = solution_[node];
   if (from == to) return;
   solution_[node] = to;

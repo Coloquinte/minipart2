@@ -82,6 +82,22 @@ Index Hypergraph::nPins() const {
   return ret;
 }
 
+Index Hypergraph::totalHedgeWeight() const {
+  Index ret = 0;
+  for (Index hedge = 0; hedge < nHedges(); ++hedge) {
+    ret += hedgeWeight(hedge);
+  }
+  return ret;
+}
+
+Index Hypergraph::totalNodeWeight() const {
+  Index ret = 0;
+  for (Index node = 0; node < nNodes(); ++node) {
+    ret += nodeWeight(node);
+  }
+  return ret;
+}
+
 void Hypergraph::constructNodes() {
   nodeToHedges_.clear();
   nodeToHedges_.resize(nodeWeights_.size());

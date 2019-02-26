@@ -16,6 +16,8 @@ class Hypergraph {
   Index nNodes  () const { return nodeWeights_.size(); }
   Index nHedges () const { return hedgeWeights_.size(); }
   Index nPins() const;
+  Index totalNodeWeight() const;
+  Index totalHedgeWeight() const;
 
   const std::vector<Index> hedgeNodes(Index hedge) const { return hedgeToNodes_[hedge]; }
   const std::vector<Index> nodeHedges(Index node) const { return nodeToHedges_[node]; }
