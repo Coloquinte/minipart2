@@ -170,13 +170,13 @@ class HedgeHasher {
     uint64_t magic = 1099511628211llu;
     uint64_t ret = 0;
     for (Index n : hypergraph_.hedgeNodes(hedge)) {
-      ret = (ret ^ n) * magic;
+      ret = (ret ^ (uint64_t) n) * magic;
     }
     return ret;
   }
 
  private:
-  Hypergraph hypergraph_;
+  const Hypergraph &hypergraph_;
 };
 
 class HedgeComparer {
@@ -189,9 +189,9 @@ class HedgeComparer {
   }
 
  private:
-  Hypergraph hypergraph_;
+  const Hypergraph &hypergraph_;
 };
-}
+} // End anonymous namespace
 
 void Hypergraph::mergeParallelHedges() {
   vector<vector<Index> > newHedges;
