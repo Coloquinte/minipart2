@@ -1,5 +1,6 @@
 
 #include "hypergraph.hh"
+#include "partitioning_params.hh"
 #include "blackbox_optimizer.hh"
 
 #include <iostream>
@@ -15,20 +16,24 @@ int main(int argc, char **argv) {
     exit(1);
   }
 
+  PartitioningParams params {
+    .nPartitions = atoi(argv[2]),
+    .imbalanceFactor = 0.05,
+  };
+
   ifstream f(argv[1]);
   Hypergraph hg = Hypergraph::readHmetis(f);
   hg.checkConsistency();
   hg.mergeParallelHedges();
+  hg.setupPartitions(params.nPartitions, params.imbalanceFactor);
 
-  BlackboxOptimizer::Params params {
-    .nPartitions = atoi(argv[2]),
-    .imbalanceFactor = 0.05,
+  BlackboxOptimizer::Params optParams {
     .nCycles = 1,
     .coarseningFactor = 2.0,
     .movesPerElement = 4.0,
     .seed = 1
   };
-  BlackboxOptimizer::run(hg, params);
+  BlackboxOptimizer::run(hg, optParams);
 
   ofstream of("test.hgr");
   hg.writeHmetis(of);

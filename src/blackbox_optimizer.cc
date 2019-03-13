@@ -10,7 +10,7 @@ using namespace std;
 
 namespace minipart {
 vector<Index> BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen) {
-  uniform_int_distribution<int> partDist(0, params.nPartitions-1);
+  uniform_int_distribution<int> partDist(0, hypergraph.nParts()-1);
   vector<Index> solution(hypergraph.nNodes());
   for (Index &p : solution) {
     p = partDist(rgen);
@@ -18,32 +18,14 @@ vector<Index> BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergrap
   return solution;
 }
 
-vector<Index> BlackboxOptimizer::computePartitionCapacities(const Hypergraph &hypergraph, const Params &params) {
-  Index totalCapacity = hypergraph.totalNodeWeight() * (1.0 + params.imbalanceFactor);
-  Index partitionCapacity = totalCapacity  / params.nPartitions;
-  vector<Index> partitionCapacities(params.nPartitions, partitionCapacity);
-  partitionCapacities[0] = totalCapacity - partitionCapacity * (params.nPartitions - 1);
-  return partitionCapacities;
-}
-
 vector<Index> BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &params) {
   mt19937 rgen(params.seed);
-  vector<Index> partitionCapacities = computePartitionCapacities(hypergraph, params);
-
-  //vector<Index> solution = runInitialPlacement(hypergraph, params, rgen);
-  //cout << "Initial cut: " << hypergraph.metricsCut(solution) << endl;
-  //cout << "Initial connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
-  //runLocalSearch(hypergraph, params, partitionCapacities, rgen, solution);
-  //cout << "Final cut: " << hypergraph.metricsCut(solution) << endl;
-  //cout << "Final connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
-  //cout << endl;
-
   vector<vector<Index> > solutions;
   for (int i = 0; i < 32; ++i) {
     vector<Index> solution = runInitialPlacement(hypergraph, params, rgen);
     cout << "Initial cut: " << hypergraph.metricsCut(solution) << endl;
     cout << "Initial connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
-    runLocalSearch(hypergraph, params, partitionCapacities, rgen, solution);
+    runLocalSearch(hypergraph, params, rgen, solution);
     cout << "Final cut: " << hypergraph.metricsCut(solution) << endl;
     cout << "Final connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
     solutions.push_back(solution);
@@ -53,11 +35,11 @@ vector<Index> BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params 
   return solutions.front();
 }
 
-void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Params &params, const vector<Index> &partitionCapacities, mt19937 &rgen, vector<Index> &solution) {
-  uniform_int_distribution<int> partDist(0, params.nPartitions-1);
+void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, vector<Index> &solution) {
+  uniform_int_distribution<int> partDist(0, hypergraph.nParts()-1);
   uniform_int_distribution<int> nodeDist(0, hypergraph.nNodes()-1);
-  IncrementalSolution inc(hypergraph, solution, partitionCapacities);
-  for (int iter = 0; iter < params.movesPerElement * hypergraph.nNodes() * (params.nPartitions-1); ++iter) {
+  IncrementalSolution inc(hypergraph, solution);
+  for (int iter = 0; iter < params.movesPerElement * hypergraph.nNodes() * (hypergraph.nParts()-1); ++iter) {
     Index overflow = inc.metricsSumOverflow();
     Index cost = inc.metricsSoed();
     Index node = nodeDist(rgen);
@@ -127,6 +109,18 @@ vector<Index> BlackboxOptimizer::computeCoarsening(const vector<vector<Index> > 
 
   cout << "Coarsening: " << nCoarsenedNodes << " nodes" << endl;
   return coarsening;
+}
+
+void BlackboxOptimizer::runVCycle(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<std::vector<Index> > &solutions) {
+  // Order the solutions by quality
+  
+  // Run local search and add the solution to the next pool until either:
+  //    * the new coarsening is large enough
+  //    * the termination condition is reached
+
+  // Apply coarsening and recurse
+  
+  // Rerun local search on the solutions we got
 }
 } // End namespace minipart
 

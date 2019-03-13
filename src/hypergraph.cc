@@ -40,8 +40,10 @@ Hypergraph Hypergraph::coarsen(const vector<Index> &coarsening) const {
     }
     pins.clear();
   }
-
   ret.mergeParallelHedges();
+
+  // Partitions
+  ret.partWeights_ = partWeights_;
 
   return ret;
 }
@@ -119,6 +121,7 @@ void Hypergraph::constructHedges() {
 }
 
 Index Hypergraph::metricsCut(const vector<Index> &solution) const {
+  assert ((Index) solution.size() == nNodes());
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
     if (cut(solution, hedge))
@@ -128,6 +131,7 @@ Index Hypergraph::metricsCut(const vector<Index> &solution) const {
 }
 
 Index Hypergraph::metricsSoed(const vector<Index> &solution) const {
+  assert ((Index) solution.size() == nNodes());
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
     ret += hedgeWeight(hedge) * degree(solution, hedge);
@@ -136,9 +140,26 @@ Index Hypergraph::metricsSoed(const vector<Index> &solution) const {
 }
 
 Index Hypergraph::metricsConnectivity(const vector<Index> &solution) const {
+  assert ((Index) solution.size() == nNodes());
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
     ret += hedgeWeight(hedge) * (degree(solution, hedge) - 1);
+  }
+  return ret;
+}
+
+Index Hypergraph::metricsSumOverflow(const vector<Index> &solution) const {
+  assert ((Index) solution.size() == nNodes());
+  vector<Index> usage(nParts(), 0);
+  for (int i = 0; i < nNodes(); ++i) {
+    assert (solution[i] >= 0 && solution[i] < nParts());
+    usage[solution[i]] += nodeWeight(i);
+  }
+  Index ret = 0;
+  for (int i = 0; i < nParts(); ++i) {
+    Index ovf = usage[i] - partWeights_[i];
+    if (ovf > 0)
+      ret += ovf;
   }
   return ret;
 }
@@ -215,6 +236,18 @@ void Hypergraph::mergeParallelHedges() {
   hedgeWeights_ = newWeights;
 
   constructNodes();
+}
+
+void Hypergraph::setupPartitions(Index nParts, double imbalanceFactor) {
+  if (nParts > 0) {
+    Index totalCapacity = totalNodeWeight() * (1.0 + imbalanceFactor);
+    Index partitionCapacity = totalCapacity  / nParts;
+    partWeights_.assign(nParts, partitionCapacity);
+    partWeights_[0] = totalCapacity - partitionCapacity * (nParts - 1);
+  }
+  else {
+    partWeights_.clear();
+  }
 }
 
 } // End namespace minipart

@@ -9,13 +9,13 @@ namespace minipart {
 
 class IncrementalSolution {
  public:
-  IncrementalSolution(const Hypergraph &hypergraph, std::vector<Index> &solution, const std::vector<Index> &partitionCapacities);
+  IncrementalSolution(const Hypergraph &hypergraph, std::vector<Index> &solution);
 
   void move(Index node, Index to);
 
   Index nNodes() const { return hypergraph_.nNodes(); }
   Index nHedges() const { return hypergraph_.nHedges(); }
-  Index nPartitions() const { return partitionCapacities_.size(); }
+  Index nParts() const { return hypergraph_.nParts(); }
 
   const std::vector<Index>& solution() const { return solution_; }
   Index solution(Index node) const { return solution_[node]; }
@@ -24,11 +24,12 @@ class IncrementalSolution {
   Index degree(Index hedge) const { return hedgeDegrees_[hedge]; }
 
   Index demand(Index partition) const { return partitionDemands_[partition]; }
-  Index capacity(Index partition) const { return partitionCapacities_[partition]; }
+  Index capacity(Index partition) const { return hypergraph_.partWeight(partition); }
 
   // Metrics
   Index metricsCut() const { return currentCut_; }
   Index metricsSoed() const { return currentSoed_; }
+  Index metricsConnectivity() const { return currentSoed_ - nHedges(); }
   Index metricsSumOverflow() const;
 
  private:
@@ -42,9 +43,8 @@ class IncrementalSolution {
   const Hypergraph &hypergraph_;
   std::vector<Index> &solution_;
 
-  // Partition states
+  // Partition state
   std::vector<Index> partitionDemands_;
-  std::vector<Index> partitionCapacities_;
 
   // Hyperedge states
   std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;

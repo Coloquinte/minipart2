@@ -6,10 +6,9 @@
 using namespace std;
 
 namespace minipart {
-IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, vector<Index> &solution, const vector<Index> &partitionCapacities)
+IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, vector<Index> &solution)
 : hypergraph_(hypergraph)
-, solution_(solution)
-, partitionCapacities_(partitionCapacities) {
+, solution_(solution) {
   assert (hypergraph_.nNodes() == (Index) solution_.size());
   partitionDemands_ = computePartitionDemands();
   hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition();
@@ -19,7 +18,7 @@ IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, vector<In
 }
 
 vector<Index> IncrementalSolution::computePartitionDemands() const {
-  vector<Index> ret(nPartitions());
+  vector<Index> ret(nParts());
   for (Index node = 0; node < nNodes(); ++node) {
     ret[solution_[node]] += hypergraph_.nodeWeight(node);
   }
@@ -29,7 +28,7 @@ vector<Index> IncrementalSolution::computePartitionDemands() const {
 vector<vector<Index> > IncrementalSolution::computeHedgeNbPinsPerPartition() const {
   vector<vector<Index> > ret(nHedges());
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
-    vector<Index> cnt(nPartitions());
+    vector<Index> cnt(nParts());
     for (Index node : hypergraph_.hedgeNodes(hedge)) {
       ++cnt[solution_[node]];
     }
@@ -69,14 +68,14 @@ Index IncrementalSolution::computeSoed() const {
 
 Index IncrementalSolution::metricsSumOverflow() const {
   Index ret = 0;
-  for (Index p = 0; p < nPartitions(); ++p) {
-    ret += max(partitionDemands_[p] - partitionCapacities_[p], (Index) 0);
+  for (Index p = 0; p < nParts(); ++p) {
+    ret += max(demand(p) - demand(p), (Index) 0);
   }
   return ret;
 }
 
 void IncrementalSolution::move(Index node, Index to) {
-  assert (to < nPartitions() && to >= 0);
+  assert (to < nParts() && to >= 0);
   Index from = solution_[node];
   if (from == to) return;
   solution_[node] = to;

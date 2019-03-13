@@ -16,26 +16,35 @@ class Hypergraph {
   Index nNodes  () const { return nodeWeights_.size(); }
   Index nHedges () const { return hedgeWeights_.size(); }
   Index nPins() const;
+  Index nParts() const { return partWeights_.size(); }
+
   Index totalNodeWeight() const;
   Index totalHedgeWeight() const;
+  Index totalPartWeight() const;
 
   const std::vector<Index> hedgeNodes(Index hedge) const { return hedgeToNodes_[hedge]; }
   const std::vector<Index> nodeHedges(Index node) const { return nodeToHedges_[node]; }
 
   Index hedgeWeight (Index hedge) const { return hedgeWeights_[hedge]; }
   Index nodeWeight  (Index node)  const { return nodeWeights_[node]; }
-
-  Hypergraph coarsen(const std::vector<Index> &coarsening) const;
-  void mergeParallelHedges();
+  Index partWeight  (Index part)  const { return partWeights_[part]; }
 
   // Metrics
   Index metricsCut(const std::vector<Index> &solution) const;
   Index metricsSoed(const std::vector<Index> &solution) const;
   Index metricsConnectivity(const std::vector<Index> &solution) const;
+  Index metricsSumOverflow(const std::vector<Index> &solution) const;
 
   // IO functions
   static Hypergraph readHmetis(std::istream &);
   void writeHmetis(std::ostream &) const;
+
+  // Coarsening
+  Hypergraph coarsen(const std::vector<Index> &coarsening) const;
+
+  // Modifications
+  void setupPartitions(Index nParts, double imbalanceFactor);
+  void mergeParallelHedges();
 
   void checkConsistency() const; 
 
@@ -49,6 +58,7 @@ class Hypergraph {
  private:
   std::vector<Index> nodeWeights_;
   std::vector<Index> hedgeWeights_;
+  std::vector<Index> partWeights_;
   std::vector<std::vector<Index> > nodeToHedges_;
   std::vector<std::vector<Index> > hedgeToNodes_;
 };
