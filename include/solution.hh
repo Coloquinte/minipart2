@@ -18,6 +18,9 @@ class Solution {
   Index  operator[](Index node) const { return parts_[node]; }
   Index& operator[](Index node) { return parts_[node]; }
 
+  Solution coarsen(const Solution &coarsening) const;
+  Solution uncoarsen(const Solution &coarsening) const;
+
   void checkConsistency() const;
 
  private:

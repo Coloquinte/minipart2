@@ -112,34 +112,49 @@ Solution BlackboxOptimizer::computeCoarsening(const vector<Solution> &solutions)
     }
   }
 
-  cout << "Coarsening: " << nCoarsenedNodes << " nodes" << endl;
+  //cout << "Coarsening: " << nCoarsenedNodes << " nodes" << endl;
   return Solution(coarsening);
 }
 
 void BlackboxOptimizer::runVCycle(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, vector<Solution> &solutions) {
+  cout << "V-cycle step with " << hypergraph.nNodes() << " nodes on " << solutions.size() << " solutions" << endl;
   // Order the solutions by quality
   // TODO
   
   // Run local search on the initial solutions and add them to the pool until either:
   //    * the new coarsening is large enough
   //    * a termination condition is reached
-  vector<Solution> pool;
   const int maxNbSols = 32;
-  for (size_t nbSols = 1; nbSols <= maxNbSols; ++nbSols) {
-    if (solutions.size() < nbSols)
-      pool.push_back(runInitialPlacement(hypergraph, params, rgen));
-    else
-      pool.push_back(solutions[nbSols-1]);
-    runLocalSearch(hypergraph, params, rgen, pool.back());
-    // TODO: check current coarsening
-    computeCoarsening(pool);
+  for (size_t nSols = 1; nSols <= maxNbSols; ++nSols) {
+    if (solutions.size() < nSols)
+      solutions.push_back(runInitialPlacement(hypergraph, params, rgen));
+    runLocalSearch(hypergraph, params, rgen, solutions[nSols-1]);
+    Solution coarsening = computeCoarsening(vector<Solution>(solutions.begin(), solutions.begin() + nSols));
+    if (coarsening.nParts() == coarsening.nNodes()) {
+      // No success in coarsening anymore; time to stop the cycle
+      return;
+    }
+    if (coarsening.nParts() > hypergraph.nNodes() / params.coarseningFactor) {
+      // New coarsening large enough: apply and recurse
+      Hypergraph cHypergraph = hypergraph.coarsen(coarsening);
+      vector<Solution> cSolutions;
+      for (size_t i = 0; i < nSols; ++i) {
+        cSolutions.emplace_back(solutions[i].coarsen(coarsening));
+      }
+      runVCycle(cHypergraph, params, rgen, cSolutions);
+      solutions.clear();
+      for (const Solution &cSolution : cSolutions) {
+        solutions.emplace_back(cSolution.uncoarsen(coarsening));
+      }
+      break;
+    }
   }
 
-  // Apply coarsening and recurse
-  // TODO
-  
-  // Rerun local search on the solutions we got
-  solutions = pool;
+  cout << "Reoptimization step with " << hypergraph.nNodes() << " nodes on " << solutions.size() << " solutions" << endl;
+  // Rerun local search on the solutions we got back
+  for (Solution &solution : solutions) {
+    runLocalSearch(hypergraph, params, rgen, solution);
+  }
 }
 } // End namespace minipart
 

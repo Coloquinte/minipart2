@@ -11,6 +11,7 @@ IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, Solution 
 : hypergraph_(hypergraph)
 , solution_(solution) {
   assert (hypergraph_.nNodes() == solution_.nNodes());
+  assert (hypergraph_.nParts() == solution_.nParts());
   partitionDemands_ = computePartitionDemands();
   hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition();
   hedgeDegrees_ = computeHedgeDegrees();
