@@ -16,14 +16,14 @@ class BlackboxOptimizer {
     int seed;
   };
 
-  static std::vector<Index> run(const Hypergraph &hypergraph, const Params &params);
+  static Solution run(const Hypergraph &hypergraph, const Params &params);
 
  private:
-  static std::vector<Index> runInitialPlacement(const Hypergraph &hypergraph, const Params &params, std::mt19937&);
-  static void runLocalSearch(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Index> &solution);
-  static void runVCycle(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<std::vector<Index> > &solutions);
+  static Solution runInitialPlacement(const Hypergraph &hypergraph, const Params &params, std::mt19937&);
+  static void runLocalSearch(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, Solution &solution);
+  static void runVCycle(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions);
 
-  static std::vector<Index> computeCoarsening(const std::vector<std::vector<Index> > &solutions);
+  static Solution computeCoarsening(const std::vector<Solution> &solutions);
 };
 } // End namespace minipart
 

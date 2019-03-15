@@ -3,13 +3,11 @@
 #ifndef MINIPART_HYPERGRAPH_HH
 #define MINIPART_HYPERGRAPH_HH
 
-#include <cstdint>
-#include <vector>
+#include "common.hh"
+#include "solution.hh"
 #include <iosfwd>
 
 namespace minipart {
-
-typedef std::int32_t Index;
 
 class Hypergraph {
  public:
@@ -30,17 +28,17 @@ class Hypergraph {
   Index partWeight  (Index part)  const { return partWeights_[part]; }
 
   // Metrics
-  Index metricsCut(const std::vector<Index> &solution) const;
-  Index metricsSoed(const std::vector<Index> &solution) const;
-  Index metricsConnectivity(const std::vector<Index> &solution) const;
-  Index metricsSumOverflow(const std::vector<Index> &solution) const;
+  Index metricsCut(const Solution &solution) const;
+  Index metricsSoed(const Solution &solution) const;
+  Index metricsConnectivity(const Solution &solution) const;
+  Index metricsSumOverflow(const Solution &solution) const;
 
   // IO functions
   static Hypergraph readHmetis(std::istream &);
   void writeHmetis(std::ostream &) const;
 
   // Coarsening
-  Hypergraph coarsen(const std::vector<Index> &coarsening) const;
+  Hypergraph coarsen(const Solution &coarsening) const;
 
   // Modifications
   void setupPartitions(Index nParts, double imbalanceFactor);
@@ -52,8 +50,8 @@ class Hypergraph {
   void constructNodes();
   void constructHedges();
 
-  bool cut(const std::vector<Index> &solution, Index hedge) const;
-  Index degree(const std::vector<Index> &solution, Index hedge) const;
+  bool cut(const Solution &solution, Index hedge) const;
+  Index degree(const Solution &solution, Index hedge) const;
 
  private:
   std::vector<Index> nodeWeights_;

@@ -1,3 +1,4 @@
+// Copyright (C) 2019 Gabriel Gouvine - All Rights Reserved
 
 #include "hypergraph.hh"
 
@@ -11,17 +12,15 @@ using namespace std;
 
 namespace minipart {
 
-Hypergraph Hypergraph::coarsen(const vector<Index> &coarsening) const {
-  assert (nNodes() == (Index) coarsening.size());
+Hypergraph Hypergraph::coarsen(const Solution &coarsening) const {
+  assert (nNodes() == coarsening.nNodes());
+  assert (coarsening.nParts() <= nNodes());
   if (nNodes() == 0) return Hypergraph();
-
-  Index coarsenedNodes = *max_element(coarsening.begin(), coarsening.end()) + 1;
-  assert (coarsenedNodes <= nNodes());
 
   Hypergraph ret;
 
   // Node weights
-  ret.nodeWeights_.resize(coarsenedNodes);
+  ret.nodeWeights_.resize(coarsening.nParts());
   for (Index node = 0; node < nHedges(); ++node) {
     ret.nodeWeights_[coarsening[node]] += nodeWeights_[node];
   }
@@ -120,8 +119,9 @@ void Hypergraph::constructHedges() {
   }
 }
 
-Index Hypergraph::metricsCut(const vector<Index> &solution) const {
-  assert ((Index) solution.size() == nNodes());
+Index Hypergraph::metricsCut(const Solution &solution) const {
+  assert (solution.nNodes() == nNodes());
+  assert (solution.nParts() == nParts());
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
     if (cut(solution, hedge))
@@ -130,8 +130,9 @@ Index Hypergraph::metricsCut(const vector<Index> &solution) const {
   return ret;
 }
 
-Index Hypergraph::metricsSoed(const vector<Index> &solution) const {
-  assert ((Index) solution.size() == nNodes());
+Index Hypergraph::metricsSoed(const Solution &solution) const {
+  assert (solution.nNodes() == nNodes());
+  assert (solution.nParts() == nParts());
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
     ret += hedgeWeight(hedge) * degree(solution, hedge);
@@ -139,8 +140,9 @@ Index Hypergraph::metricsSoed(const vector<Index> &solution) const {
   return ret;
 }
 
-Index Hypergraph::metricsConnectivity(const vector<Index> &solution) const {
-  assert ((Index) solution.size() == nNodes());
+Index Hypergraph::metricsConnectivity(const Solution &solution) const {
+  assert (solution.nNodes() == nNodes());
+  assert (solution.nParts() == nParts());
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
     ret += hedgeWeight(hedge) * (degree(solution, hedge) - 1);
@@ -148,8 +150,9 @@ Index Hypergraph::metricsConnectivity(const vector<Index> &solution) const {
   return ret;
 }
 
-Index Hypergraph::metricsSumOverflow(const vector<Index> &solution) const {
-  assert ((Index) solution.size() == nNodes());
+Index Hypergraph::metricsSumOverflow(const Solution &solution) const {
+  assert (solution.nNodes() == nNodes());
+  assert (solution.nParts() == nParts());
   vector<Index> usage(nParts(), 0);
   for (int i = 0; i < nNodes(); ++i) {
     assert (solution[i] >= 0 && solution[i] < nParts());
@@ -164,7 +167,7 @@ Index Hypergraph::metricsSumOverflow(const vector<Index> &solution) const {
   return ret;
 }
 
-bool Hypergraph::cut(const vector<Index> &solution, Index hedge) const {
+bool Hypergraph::cut(const Solution &solution, Index hedge) const {
   unordered_set<Index> parts;
   for (Index node : hedgeNodes(hedge)) {
     parts.insert(solution[node]);
@@ -172,7 +175,7 @@ bool Hypergraph::cut(const vector<Index> &solution, Index hedge) const {
   return parts.size() > 1;
 }
 
-Index Hypergraph::degree(const vector<Index> &solution, Index hedge) const {
+Index Hypergraph::degree(const Solution &solution, Index hedge) const {
   unordered_set<Index> parts;
   for (Index node : hedgeNodes(hedge)) {
     parts.insert(solution[node]);

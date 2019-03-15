@@ -1,3 +1,4 @@
+// Copyright (C) 2019 Gabriel Gouvine - All Rights Reserved
 
 #include "incremental_solution.hh"
 
@@ -6,10 +7,10 @@
 using namespace std;
 
 namespace minipart {
-IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, vector<Index> &solution)
+IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, Solution &solution)
 : hypergraph_(hypergraph)
 , solution_(solution) {
-  assert (hypergraph_.nNodes() == (Index) solution_.size());
+  assert (hypergraph_.nNodes() == solution_.nNodes());
   partitionDemands_ = computePartitionDemands();
   hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition();
   hedgeDegrees_ = computeHedgeDegrees();

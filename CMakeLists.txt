@@ -10,6 +10,7 @@ INCLUDE_DIRECTORIES(${MINIPART_SOURCE_DIR}/include)
 
 SET (SOURCES
   src/hypergraph.cc
+  src/solution.cc
   src/incremental_solution.cc
   src/blackbox_optimizer.cc
   src/io.cc

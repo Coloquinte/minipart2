@@ -9,7 +9,7 @@ namespace minipart {
 
 class IncrementalSolution {
  public:
-  IncrementalSolution(const Hypergraph &hypergraph, std::vector<Index> &solution);
+  IncrementalSolution(const Hypergraph &hypergraph, Solution &solution);
 
   void move(Index node, Index to);
 
@@ -17,7 +17,7 @@ class IncrementalSolution {
   Index nHedges() const { return hypergraph_.nHedges(); }
   Index nParts() const { return hypergraph_.nParts(); }
 
-  const std::vector<Index>& solution() const { return solution_; }
+  const Solution& solution() const { return solution_; }
   Index solution(Index node) const { return solution_[node]; }
 
   bool cut(Index hedge) const { return hedgeDegrees_[hedge] != 0; }
@@ -41,7 +41,7 @@ class IncrementalSolution {
 
  private:
   const Hypergraph &hypergraph_;
-  std::vector<Index> &solution_;
+  Solution &solution_;
 
   // Partition state
   std::vector<Index> partitionDemands_;

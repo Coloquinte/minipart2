@@ -1,3 +1,4 @@
+// Copyright (C) 2019 Gabriel Gouvine - All Rights Reserved
 
 #include "blackbox_optimizer.hh"
 #include "incremental_solution.hh"
@@ -9,18 +10,21 @@
 using namespace std;
 
 namespace minipart {
-vector<Index> BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen) {
+Solution BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen) {
   uniform_int_distribution<int> partDist(0, hypergraph.nParts()-1);
-  vector<Index> solution(hypergraph.nNodes());
-  for (Index &p : solution) {
-    p = partDist(rgen);
+  Solution solution(hypergraph.nNodes(), hypergraph.nParts());
+  for (Index i = 0; i < hypergraph.nNodes(); ++i) {
+    solution[i] = partDist(rgen);
   }
   return solution;
 }
 
-vector<Index> BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &params) {
+Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &params) {
   mt19937 rgen(params.seed);
-  vector<vector<Index> > solutions;
+  vector<Solution> solutions;
+  runVCycle(hypergraph, params, rgen, solutions);
+
+  /*
   for (int i = 0; i < 32; ++i) {
     vector<Index> solution = runInitialPlacement(hypergraph, params, rgen);
     cout << "Initial cut: " << hypergraph.metricsCut(solution) << endl;
@@ -32,10 +36,11 @@ vector<Index> BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params 
     computeCoarsening(solutions);
     cout << endl;
   }
+  */
   return solutions.front();
 }
 
-void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, vector<Index> &solution) {
+void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, Solution &solution) {
   uniform_int_distribution<int> partDist(0, hypergraph.nParts()-1);
   uniform_int_distribution<int> nodeDist(0, hypergraph.nNodes()-1);
   IncrementalSolution inc(hypergraph, solution);
@@ -55,43 +60,43 @@ void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Param
 namespace {
 class SolutionHasher {
  public:
-  SolutionHasher(const vector<vector<Index> > &solutions)
+  SolutionHasher(const vector<Solution> &solutions)
     : solutions_(solutions) {}
 
   uint64_t operator()(const Index &node) const {
     // FNV hash
     uint64_t magic = 1099511628211llu;
     uint64_t ret = 0;
-    for (const vector<Index> &solution : solutions_) {
+    for (const Solution &solution : solutions_) {
       ret = (ret ^ (uint64_t)solution[node]) * magic;
     }
     return ret;
   }
 
  private:
-  const vector<vector<Index> > &solutions_;
+  const vector<Solution> &solutions_;
 };
 
 class SolutionComparer {
  public:
-  SolutionComparer(const vector<vector<Index> > &solutions)
+  SolutionComparer(const vector<Solution> &solutions)
     : solutions_(solutions) {}
 
   bool operator()(const Index &n1, const Index &n2) const {
-    for (const vector<Index> &solution : solutions_) {
+    for (const Solution &solution : solutions_) {
       if (solution[n1] != solution[n2]) return false;
     }
     return true;
   }
 
  private:
-  const vector<vector<Index> > &solutions_;
+  const vector<Solution> &solutions_;
 };
 } // End anonymous namespace
 
-vector<Index> BlackboxOptimizer::computeCoarsening(const vector<vector<Index> > &solutions) {
+Solution BlackboxOptimizer::computeCoarsening(const vector<Solution> &solutions) {
   assert (solutions.size() >= 1);
-  Index nNodes = solutions.front().size();
+  Index nNodes = solutions.front().nNodes();
   unordered_map<Index, Index, SolutionHasher, SolutionComparer> coarseningMap(nNodes, SolutionHasher(solutions), SolutionComparer(solutions));
   coarseningMap.reserve(nNodes);
 
@@ -108,19 +113,33 @@ vector<Index> BlackboxOptimizer::computeCoarsening(const vector<vector<Index> > 
   }
 
   cout << "Coarsening: " << nCoarsenedNodes << " nodes" << endl;
-  return coarsening;
+  return Solution(coarsening);
 }
 
-void BlackboxOptimizer::runVCycle(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<std::vector<Index> > &solutions) {
+void BlackboxOptimizer::runVCycle(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, vector<Solution> &solutions) {
   // Order the solutions by quality
+  // TODO
   
-  // Run local search and add the solution to the next pool until either:
+  // Run local search on the initial solutions and add them to the pool until either:
   //    * the new coarsening is large enough
-  //    * the termination condition is reached
+  //    * a termination condition is reached
+  vector<Solution> pool;
+  const int maxNbSols = 32;
+  for (size_t nbSols = 1; nbSols <= maxNbSols; ++nbSols) {
+    if (solutions.size() < nbSols)
+      pool.push_back(runInitialPlacement(hypergraph, params, rgen));
+    else
+      pool.push_back(solutions[nbSols-1]);
+    runLocalSearch(hypergraph, params, rgen, pool.back());
+    // TODO: check current coarsening
+    computeCoarsening(pool);
+  }
 
   // Apply coarsening and recurse
+  // TODO
   
   // Rerun local search on the solutions we got
+  solutions = pool;
 }
 } // End namespace minipart
 
