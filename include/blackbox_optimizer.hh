@@ -12,6 +12,7 @@ class IncrementalSolution;
 class BlackboxOptimizer {
  public:
   struct Params {
+    int nSolutions;
     int nCycles;
     double coarseningFactor;
     double movesPerElement;

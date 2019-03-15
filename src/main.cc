@@ -29,7 +29,8 @@ int main(int argc, char **argv) {
   hg.setupPartitions(params.nPartitions, params.imbalanceFactor);
 
   BlackboxOptimizer::Params optParams {
-    .nCycles = 10,
+    .nSolutions = 32,
+    .nCycles = 64,
     .coarseningFactor = 2.0,
     .movesPerElement = 20.0,
     .seed = 1

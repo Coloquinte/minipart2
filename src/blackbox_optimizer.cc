@@ -6,6 +6,7 @@
 #include <iostream>
 #include <unordered_map>
 #include <cassert>
+#include <algorithm>
 
 using namespace std;
 
@@ -22,6 +23,9 @@ Solution BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergraph, co
 Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &params) {
   mt19937 rgen(params.seed);
   vector<Solution> solutions;
+  for (int i = 0; i < params.nSolutions; ++i) {
+    solutions.push_back(runInitialPlacement(hypergraph, params, rgen));
+  }
 
   for (int i = 0; i < params.nCycles; ++i) {
     runVCycle(hypergraph, params, rgen, solutions);
@@ -31,8 +35,6 @@ Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &para
       cout << ", cut: " << hypergraph.metricsCut(solution);
       cout << ", connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
     }
-
-    solutions.erase(solutions.begin() + 1, solutions.end());
   }
   return solutions.front();
 }
@@ -146,23 +148,20 @@ void BlackboxOptimizer::runVCycle(const Hypergraph &hypergraph, const Params &pa
   for (const Solution &solution : solutions) {
     solution.checkConsistency();
   }
-  // Order the solutions by quality
-  // TODO
-  
+
+  shuffle(solutions.begin(), solutions.end(), rgen);
+
   // Run local search on the initial solutions and add them to the pool until either:
   //    * the new coarsening is large enough
   //    * a termination condition is reached
-  const int maxNbSols = 32;
-  for (size_t nSols = 1; nSols <= maxNbSols; ++nSols) {
-    if (solutions.size() < nSols)
-      solutions.push_back(runInitialPlacement(hypergraph, params, rgen));
+  for (size_t nSols = 1; nSols <= solutions.size(); ++nSols) {
     runLocalSearch(hypergraph, params, rgen, solutions[nSols-1]);
     Solution coarsening = computeCoarsening(vector<Solution>(solutions.begin(), solutions.begin() + nSols));
     if (coarsening.nParts() == coarsening.nNodes()) {
       // No success in coarsening anymore; time to stop the cycle
       return;
     }
-    if (coarsening.nParts() > hypergraph.nNodes() / params.coarseningFactor) {
+    if (nSols == solutions.size() || coarsening.nParts() > hypergraph.nNodes() / params.coarseningFactor) {
       // New coarsening large enough: apply and recurse
       Hypergraph cHypergraph = hypergraph.coarsen(coarsening);
       vector<Solution> cSolutions;
@@ -170,19 +169,15 @@ void BlackboxOptimizer::runVCycle(const Hypergraph &hypergraph, const Params &pa
         cSolutions.emplace_back(solutions[i].coarsen(coarsening));
       }
       runVCycle(cHypergraph, params, rgen, cSolutions);
-      solutions.clear();
-      for (const Solution &cSolution : cSolutions) {
-        solutions.emplace_back(cSolution.uncoarsen(coarsening));
+      assert (cSolutions.size() == nSols);
+      for (size_t i = 0; i < nSols; ++i) {
+        solutions[i] = cSolutions[i].uncoarsen(coarsening);
+        runLocalSearch(hypergraph, params, rgen, solutions[i]);
       }
       break;
     }
   }
 
-  cout << "Reoptimization step with " << hypergraph.nNodes() << " nodes on " << solutions.size() << " solutions" << endl;
-  // Rerun local search on the solutions we got back
-  for (Solution &solution : solutions) {
-    runLocalSearch(hypergraph, params, rgen, solution);
-  }
   for (const Solution &solution : solutions) {
     solution.checkConsistency();
   }
