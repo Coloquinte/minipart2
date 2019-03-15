@@ -32,19 +32,22 @@ Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &para
       cout << ", connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
     }
 
-    solutions.erase(solutions.begin() + 2, solutions.end());
+    solutions.erase(solutions.begin() + 1, solutions.end());
   }
   return solutions.front();
 }
 
 void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, Solution &solution) {
-  uniform_int_distribution<int> partDist(0, hypergraph.nParts()-1);
-  uniform_int_distribution<int> nodeDist(0, hypergraph.nNodes()-1);
-  //cout << "Local search start; overflow " << hypergraph.metricsSumOverflow(solution);
-  //cout << ", cut: " << hypergraph.metricsCut(solution);
-  //cout << ", connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
   IncrementalSolution inc(hypergraph, solution);
-  for (int iter = 0; iter < params.movesPerElement * hypergraph.nNodes() * (hypergraph.nParts()-1); ++iter) {
+  Index nMoves = params.movesPerElement * inc.nNodes() * (inc.nParts()-1);
+  runMovePass(inc, nMoves, rgen);
+  runSwapPass(inc, nMoves, rgen);
+}
+
+void BlackboxOptimizer::runMovePass(IncrementalSolution &inc, Index nMoves, mt19937 &rgen) {
+  uniform_int_distribution<int> partDist(0, inc.nParts()-1);
+  uniform_int_distribution<int> nodeDist(0, inc.nNodes()-1);
+  for (int iter = 0; iter < nMoves; ++iter) {
     Index overflow = inc.metricsSumOverflow();
     Index cost = inc.metricsSoed();
     Index node = nodeDist(rgen);
@@ -52,12 +55,30 @@ void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Param
     Index dst = partDist(rgen);
     inc.move(node, dst);
     if (inc.metricsSumOverflow() > overflow ||
-        (inc.metricsSumOverflow() == overflow && inc.metricsSoed() > cost))
+        (inc.metricsSumOverflow() == overflow && inc.metricsSoed() > cost)) {
       inc.move(node, src);
+    }
   }
-  //cout << "Local search end;   overflow " << hypergraph.metricsSumOverflow(solution);
-  //cout << ", cut: " << hypergraph.metricsCut(solution);
-  //cout << ", connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
+}
+
+void BlackboxOptimizer::runSwapPass(IncrementalSolution &inc, Index nMoves, mt19937 &rgen) {
+  uniform_int_distribution<int> nodeDist(0, inc.nNodes()-1);
+  for (int iter = 0; iter < nMoves; ++iter) {
+    Index overflow = inc.metricsSumOverflow();
+    Index cost = inc.metricsSoed();
+    Index n1 = nodeDist(rgen);
+    Index n2 = nodeDist(rgen);
+    Index p1 = inc.solution(n1);
+    Index p2 = inc.solution(n1);
+    if (p1 == p2) continue;
+    inc.move(n1, p2);
+    inc.move(n2, p1);
+    if (inc.metricsSumOverflow() > overflow ||
+        (inc.metricsSumOverflow() == overflow && inc.metricsSoed() > cost)) {
+      inc.move(n1, p1);
+      inc.move(n2, p2);
+    }
+  }
 }
 
 namespace {

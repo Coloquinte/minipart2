@@ -7,6 +7,8 @@
 #include <random>
 
 namespace minipart {
+class IncrementalSolution;
+
 class BlackboxOptimizer {
  public:
   struct Params {
@@ -19,9 +21,12 @@ class BlackboxOptimizer {
   static Solution run(const Hypergraph &hypergraph, const Params &params);
 
  private:
+  static void runVCycle(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions);
+
   static Solution runInitialPlacement(const Hypergraph &hypergraph, const Params &params, std::mt19937&);
   static void runLocalSearch(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, Solution &solution);
-  static void runVCycle(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions);
+  static void runMovePass(IncrementalSolution &inc, Index nMoves, std::mt19937 &rgen);
+  static void runSwapPass(IncrementalSolution &inc, Index nMoves, std::mt19937 &rgen);
 
   static Solution computeCoarsening(const std::vector<Solution> &solutions);
 };
