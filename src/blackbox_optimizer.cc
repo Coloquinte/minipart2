@@ -22,27 +22,27 @@ Solution BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergraph, co
 Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &params) {
   mt19937 rgen(params.seed);
   vector<Solution> solutions;
-  runVCycle(hypergraph, params, rgen, solutions);
 
-  /*
-  for (int i = 0; i < 32; ++i) {
-    vector<Index> solution = runInitialPlacement(hypergraph, params, rgen);
-    cout << "Initial cut: " << hypergraph.metricsCut(solution) << endl;
-    cout << "Initial connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
-    runLocalSearch(hypergraph, params, rgen, solution);
-    cout << "Final cut: " << hypergraph.metricsCut(solution) << endl;
-    cout << "Final connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
-    solutions.push_back(solution);
-    computeCoarsening(solutions);
-    cout << endl;
+  for (int i = 0; i < params.nCycles; ++i) {
+    runVCycle(hypergraph, params, rgen, solutions);
+
+    for (const Solution &solution : solutions) {
+      cout << "Solution with overflow " << hypergraph.metricsSumOverflow(solution);
+      cout << ", cut: " << hypergraph.metricsCut(solution);
+      cout << ", connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
+    }
+
+    solutions.erase(solutions.begin() + 2, solutions.end());
   }
-  */
   return solutions.front();
 }
 
 void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, Solution &solution) {
   uniform_int_distribution<int> partDist(0, hypergraph.nParts()-1);
   uniform_int_distribution<int> nodeDist(0, hypergraph.nNodes()-1);
+  //cout << "Local search start; overflow " << hypergraph.metricsSumOverflow(solution);
+  //cout << ", cut: " << hypergraph.metricsCut(solution);
+  //cout << ", connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
   IncrementalSolution inc(hypergraph, solution);
   for (int iter = 0; iter < params.movesPerElement * hypergraph.nNodes() * (hypergraph.nParts()-1); ++iter) {
     Index overflow = inc.metricsSumOverflow();
@@ -55,6 +55,9 @@ void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Param
         (inc.metricsSumOverflow() == overflow && inc.metricsSoed() > cost))
       inc.move(node, src);
   }
+  //cout << "Local search end;   overflow " << hypergraph.metricsSumOverflow(solution);
+  //cout << ", cut: " << hypergraph.metricsCut(solution);
+  //cout << ", connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
 }
 
 namespace {
@@ -118,6 +121,10 @@ Solution BlackboxOptimizer::computeCoarsening(const vector<Solution> &solutions)
 
 void BlackboxOptimizer::runVCycle(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, vector<Solution> &solutions) {
   cout << "V-cycle step with " << hypergraph.nNodes() << " nodes on " << solutions.size() << " solutions" << endl;
+  hypergraph.checkConsistency();
+  for (const Solution &solution : solutions) {
+    solution.checkConsistency();
+  }
   // Order the solutions by quality
   // TODO
   
@@ -154,6 +161,9 @@ void BlackboxOptimizer::runVCycle(const Hypergraph &hypergraph, const Params &pa
   // Rerun local search on the solutions we got back
   for (Solution &solution : solutions) {
     runLocalSearch(hypergraph, params, rgen, solution);
+  }
+  for (const Solution &solution : solutions) {
+    solution.checkConsistency();
   }
 }
 } // End namespace minipart

@@ -71,7 +71,7 @@ Index IncrementalSolution::computeSoed() const {
 Index IncrementalSolution::metricsSumOverflow() const {
   Index ret = 0;
   for (Index p = 0; p < nParts(); ++p) {
-    ret += max(demand(p) - demand(p), (Index) 0);
+    ret += max(demand(p) - capacity(p), (Index) 0);
   }
   return ret;
 }
@@ -81,6 +81,8 @@ void IncrementalSolution::move(Index node, Index to) {
   Index from = solution_[node];
   if (from == to) return;
   solution_[node] = to;
+  partitionDemands_[to]   += hypergraph_.nodeWeight(node);
+  partitionDemands_[from] -= hypergraph_.nodeWeight(node);
   for (Index hedge : hypergraph_.nodeHedges(node)) {
     vector<Index> &pins = hedgeNbPinsPerPartition_[hedge];
     ++pins[to];
