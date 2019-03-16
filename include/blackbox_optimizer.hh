@@ -14,7 +14,8 @@ class BlackboxOptimizer {
   struct Params {
     int nSolutions;
     int nCycles;
-    double coarseningFactor;
+    double minCoarseningFactor;
+    double maxCoarseningFactor;
     double movesPerElement;
     int seed;
   };
@@ -22,14 +23,25 @@ class BlackboxOptimizer {
   static Solution run(const Hypergraph &hypergraph, const Params &params);
 
  private:
-  static void runVCycle(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions);
+  BlackboxOptimizer(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions);
+
+  void runVCycle();
+  void runLocalSearch(Solution &solution);
+
+  void report() const;
+  void checkConsistency() const;
 
   static Solution runInitialPlacement(const Hypergraph &hypergraph, const Params &params, std::mt19937&);
-  static void runLocalSearch(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, Solution &solution);
   static void runMovePass(IncrementalSolution &inc, Index nMoves, std::mt19937 &rgen);
   static void runSwapPass(IncrementalSolution &inc, Index nMoves, std::mt19937 &rgen);
 
   static Solution computeCoarsening(const std::vector<Solution> &solutions);
+
+ private:
+  const Hypergraph &hypergraph_;
+  const Params &params_;
+  std::mt19937 &rgen_;
+  std::vector<Solution> &solutions_;
 };
 } // End namespace minipart
 

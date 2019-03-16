@@ -7,10 +7,18 @@
 #include <unordered_map>
 #include <cassert>
 #include <algorithm>
+#include <limits>
 
 using namespace std;
 
 namespace minipart {
+BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions)
+: hypergraph_(hypergraph)
+, params_(params)
+, rgen_(rgen)
+, solutions_(solutions) {
+}
+
 Solution BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen) {
   uniform_int_distribution<int> partDist(0, hypergraph.nParts()-1);
   Solution solution(hypergraph.nNodes(), hypergraph.nParts());
@@ -18,6 +26,40 @@ Solution BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergraph, co
     solution[i] = partDist(rgen);
   }
   return solution;
+}
+
+void BlackboxOptimizer::report() const {
+  if (solutions_.empty()) {
+    cout << "No solution in the pool" << endl;
+    return;
+  }
+
+  Index nValidSols = 0;
+  Index bestOverflow = numeric_limits<Index>::max();
+  Index bestValidConnectivity = 0;
+
+  for (const Solution &solution : solutions_) {
+    Index ovf = hypergraph_.metricsSumOverflow(solution);
+    Index conn = hypergraph_.metricsConnectivity(solution);
+    if (ovf == 0) {
+      if (nValidSols == 0) bestValidConnectivity = conn;
+      else bestValidConnectivity = min(conn, bestValidConnectivity);
+      bestOverflow = 0;
+      ++nValidSols;
+    }
+    else {
+      bestOverflow = min(ovf, bestOverflow);
+    }
+  }
+
+  //cout << solutions_.size() << " solutions" << endl;
+  if (nValidSols > 0) {
+    cout << nValidSols << " valid solutions" << endl;
+    cout << "Best solution has connectivity " << bestValidConnectivity << endl;
+  }
+  else {
+    cout << "Best solution is not valid: overflow " << bestOverflow << endl;
+  }
 }
 
 Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &params) {
@@ -28,22 +70,18 @@ Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &para
   }
 
   for (int i = 0; i < params.nCycles; ++i) {
-    runVCycle(hypergraph, params, rgen, solutions);
-
-    for (const Solution &solution : solutions) {
-      cout << "Solution with overflow " << hypergraph.metricsSumOverflow(solution);
-      cout << ", cut: " << hypergraph.metricsCut(solution);
-      cout << ", connectivity: " << hypergraph.metricsConnectivity(solution) << endl;
-    }
+    BlackboxOptimizer opt(hypergraph, params, rgen, solutions);
+    opt.runVCycle();
+    opt.report();
   }
   return solutions.front();
 }
 
-void BlackboxOptimizer::runLocalSearch(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, Solution &solution) {
-  IncrementalSolution inc(hypergraph, solution);
-  Index nMoves = params.movesPerElement * inc.nNodes() * (inc.nParts()-1);
-  runMovePass(inc, nMoves, rgen);
-  runSwapPass(inc, nMoves, rgen);
+void BlackboxOptimizer::runLocalSearch(Solution &solution) {
+  IncrementalSolution inc(hypergraph_, solution);
+  Index nMoves = params_.movesPerElement * inc.nNodes() * (inc.nParts()-1);
+  runMovePass(inc, nMoves, rgen_);
+  runSwapPass(inc, nMoves, rgen_);
 }
 
 void BlackboxOptimizer::runMovePass(IncrementalSolution &inc, Index nMoves, mt19937 &rgen) {
@@ -138,50 +176,56 @@ Solution BlackboxOptimizer::computeCoarsening(const vector<Solution> &solutions)
     }
   }
 
-  //cout << "Coarsening: " << nCoarsenedNodes << " nodes" << endl;
   return Solution(coarsening);
 }
 
-void BlackboxOptimizer::runVCycle(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen, vector<Solution> &solutions) {
-  cout << "V-cycle step with " << hypergraph.nNodes() << " nodes on " << solutions.size() << " solutions" << endl;
-  hypergraph.checkConsistency();
-  for (const Solution &solution : solutions) {
-    solution.checkConsistency();
-  }
+void BlackboxOptimizer::runVCycle() {
+  cout << "V-cycle step with " << hypergraph_.nNodes() << " nodes on " << solutions_.size() << " solutions" << endl;
 
-  shuffle(solutions.begin(), solutions.end(), rgen);
+  shuffle(solutions_.begin(), solutions_.end(), rgen_);
 
   // Run local search on the initial solutions and add them to the pool until either:
-  //    * the new coarsening is large enough
-  //    * a termination condition is reached
-  for (size_t nSols = 1; nSols <= solutions.size(); ++nSols) {
-    runLocalSearch(hypergraph, params, rgen, solutions[nSols-1]);
-    Solution coarsening = computeCoarsening(vector<Solution>(solutions.begin(), solutions.begin() + nSols));
-    if (coarsening.nParts() == coarsening.nNodes()) {
+  //    * the new coarsening is large enough: go to the next level
+  //    * we used all solutions in the pool: go to the next level
+  //    * the coarsening is too large: stop the recursion
+  for (size_t nSols = 1; nSols <= solutions_.size(); ++nSols) {
+    runLocalSearch(solutions_[nSols-1]);
+    Solution coarsening = computeCoarsening(vector<Solution>(solutions_.begin(), solutions_.begin() + nSols));
+    if (coarsening.nParts() > hypergraph_.nNodes() / params_.minCoarseningFactor) {
       // No success in coarsening anymore; time to stop the cycle
       return;
     }
-    if (nSols == solutions.size() || coarsening.nParts() > hypergraph.nNodes() / params.coarseningFactor) {
+    if (nSols == solutions_.size() || coarsening.nParts() > hypergraph_.nNodes() / params_.maxCoarseningFactor) {
       // New coarsening large enough: apply and recurse
-      Hypergraph cHypergraph = hypergraph.coarsen(coarsening);
+      Hypergraph cHypergraph = hypergraph_.coarsen(coarsening);
       vector<Solution> cSolutions;
       for (size_t i = 0; i < nSols; ++i) {
-        cSolutions.emplace_back(solutions[i].coarsen(coarsening));
+        cSolutions.emplace_back(solutions_[i].coarsen(coarsening));
       }
-      runVCycle(cHypergraph, params, rgen, cSolutions);
-      assert (cSolutions.size() == nSols);
+      BlackboxOptimizer nextLevel(cHypergraph, params_, rgen_, cSolutions);
+      nextLevel.runVCycle();
       for (size_t i = 0; i < nSols; ++i) {
-        solutions[i] = cSolutions[i].uncoarsen(coarsening);
-        runLocalSearch(hypergraph, params, rgen, solutions[i]);
+        solutions_[i] = cSolutions[i].uncoarsen(coarsening);
+        runLocalSearch(solutions_[i]);
       }
       break;
     }
   }
 
-  for (const Solution &solution : solutions) {
+  checkConsistency();
+}
+
+void BlackboxOptimizer::checkConsistency() const {
+  hypergraph_.checkConsistency();
+  for (const Solution &solution : solutions_) {
+    if (hypergraph_.nNodes() != solution.nNodes())
+      throw runtime_error("Hypergraph and solutions must have the same number of nodes");
+    if (hypergraph_.nParts() != solution.nParts())
+      throw runtime_error("Hypergraph and solutions must have the same number of partitions");
     solution.checkConsistency();
   }
 }
+
 } // End namespace minipart
 
 

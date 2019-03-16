@@ -20,7 +20,7 @@ Hypergraph Hypergraph::coarsen(const Solution &coarsening) const {
   Hypergraph ret;
 
   // Node weights
-  ret.nodeWeights_.resize(coarsening.nParts());
+  ret.nodeWeights_.resize(coarsening.nParts(), 0);
   for (Index node = 0; node < nNodes(); ++node) {
     ret.nodeWeights_[coarsening[node]] += nodeWeights_[node];
   }

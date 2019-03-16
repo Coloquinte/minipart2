@@ -20,7 +20,7 @@ IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, Solution 
 }
 
 vector<Index> IncrementalSolution::computePartitionDemands() const {
-  vector<Index> ret(nParts());
+  vector<Index> ret(nParts(), 0);
   for (Index node = 0; node < nNodes(); ++node) {
     ret[solution_[node]] += hypergraph_.nodeWeight(node);
   }

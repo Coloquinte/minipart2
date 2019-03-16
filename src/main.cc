@@ -31,7 +31,8 @@ int main(int argc, char **argv) {
   BlackboxOptimizer::Params optParams {
     .nSolutions = 32,
     .nCycles = 64,
-    .coarseningFactor = 2.0,
+    .minCoarseningFactor = 1.5,
+    .maxCoarseningFactor = 4.0,
     .movesPerElement = 20.0,
     .seed = 1
   };
