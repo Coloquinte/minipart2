@@ -34,8 +34,8 @@ class Hypergraph {
   Index metricsSumOverflow(const Solution &solution) const;
 
   // IO functions
-  static Hypergraph readHmetis(std::istream &);
-  void writeHmetis(std::ostream &) const;
+  static Hypergraph readHgr(std::istream &);
+  void writeHgr(std::ostream &) const;
 
   // Coarsening
   Hypergraph coarsen(const Solution &coarsening) const;

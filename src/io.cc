@@ -1,6 +1,7 @@
 // Copyright (C) 2019 Gabriel Gouvine - All Rights Reserved
 
 #include "hypergraph.hh"
+#include "solution.hh"
 
 #include <sstream>
 #include <iostream>
@@ -26,7 +27,7 @@ stringstream getUncommentedLine(istream &s) {
 } // End anonymous namespace
 
 
-Hypergraph Hypergraph::readHmetis(istream &s) {
+Hypergraph Hypergraph::readHgr(istream &s) {
   Index nNodes, nHedges, params;
 
   stringstream ss = getUncommentedLine(s);
@@ -95,7 +96,7 @@ Hypergraph Hypergraph::readHmetis(istream &s) {
   return ret;
 }
 
-void Hypergraph::writeHmetis(ostream &s) const {
+void Hypergraph::writeHgr(ostream &s) const {
   Index totNodeWeight = totalNodeWeight();
   Index totHedgeWeight = totalHedgeWeight();
   Index totPinCount = nPins();
@@ -122,6 +123,24 @@ void Hypergraph::writeHmetis(ostream &s) const {
   for (Index node = 0; node < nNodes(); ++node) {
     s << nodeWeight(node) << "\n";
   }
+}
+
+Solution Solution::read(std::istream &s) {
+  vector<Index> parts;
+  while (s.good()) {
+    Index p;
+    s >> p;
+    if (s.fail()) break;
+    parts.push_back(p);
+  }
+  return Solution(parts);
+}
+
+void Solution::write(std::ostream &s) const {
+  for (Index p : parts_) {
+    s << p << "\n";
+  }
+  s.flush();
 }
 
 } // End namespace minipart

@@ -4,6 +4,7 @@
 #define MINIPART_SOLUTION_HH
 
 #include "common.hh"
+#include <iosfwd>
 
 namespace minipart {
 
@@ -20,6 +21,10 @@ class Solution {
 
   Solution coarsen(const Solution &coarsening) const;
   Solution uncoarsen(const Solution &coarsening) const;
+
+  // IO functions
+  static Solution read(std::istream &);
+  void write(std::ostream &) const;
 
   void checkConsistency() const;
 

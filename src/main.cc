@@ -23,24 +23,27 @@ int main(int argc, char **argv) {
   };
 
   ifstream f(argv[1]);
-  Hypergraph hg = Hypergraph::readHmetis(f);
+  Hypergraph hg = Hypergraph::readHgr(f);
   hg.checkConsistency();
   hg.mergeParallelHedges();
   hg.setupPartitions(params.nPartitions, params.imbalanceFactor);
 
   BlackboxOptimizer::Params optParams {
     .nSolutions = 32,
-    .nCycles = 64,
+    .nCycles = 10,
     .minCoarseningFactor = 1.5,
     .maxCoarseningFactor = 4.0,
-    .movesPerElement = 20.0,
+    .movesPerElement = 5.0,
     .seed = 1
   };
-  BlackboxOptimizer::run(hg, optParams);
+  Solution sol = BlackboxOptimizer::run(hg, optParams);
 
   ofstream of("test.hgr");
-  hg.writeHmetis(of);
-  
+  hg.writeHgr(of);
+
+  ofstream os("test.sol");
+  sol.write(os);
+
   return 0;
 }
 
