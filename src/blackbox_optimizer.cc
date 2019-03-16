@@ -12,11 +12,12 @@
 using namespace std;
 
 namespace minipart {
-BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions)
+BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level)
 : hypergraph_(hypergraph)
 , params_(params)
 , rgen_(rgen)
-, solutions_(solutions) {
+, solutions_(solutions)
+, level_(level) {
 }
 
 Solution BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen) {
@@ -70,11 +71,28 @@ Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &para
   }
 
   for (int i = 0; i < params.nCycles; ++i) {
-    BlackboxOptimizer opt(hypergraph, params, rgen, solutions);
+    BlackboxOptimizer opt(hypergraph, params, rgen, solutions, 0);
     opt.runVCycle();
     opt.report();
   }
-  return solutions.front();
+
+  Index bestOverflow = numeric_limits<Index>::max();
+  Index bestConnectivity = numeric_limits<Index>::max();
+  size_t best = 0;
+  for (size_t i = 0; i < solutions.size(); ++i) {
+    Index ovf = hypergraph.metricsSumOverflow(solutions[i]);
+    if (ovf > bestOverflow)
+      continue;
+
+    Index conn = hypergraph.metricsConnectivity(solutions[i]);
+    if (ovf < bestOverflow || conn < bestConnectivity) {
+      bestOverflow = ovf;
+      bestConnectivity = conn;
+      best = i;
+    }
+  }
+
+  return solutions[best];
 }
 
 void BlackboxOptimizer::runLocalSearch(Solution &solution) {
@@ -180,6 +198,7 @@ Solution BlackboxOptimizer::computeCoarsening(const vector<Solution> &solutions)
 }
 
 void BlackboxOptimizer::runVCycle() {
+  for (int i = 0; i < level_; ++i) cout << "  ";
   cout << "V-cycle step with " << hypergraph_.nNodes() << " nodes on " << solutions_.size() << " solutions" << endl;
 
   shuffle(solutions_.begin(), solutions_.end(), rgen_);
@@ -202,7 +221,7 @@ void BlackboxOptimizer::runVCycle() {
       for (size_t i = 0; i < nSols; ++i) {
         cSolutions.emplace_back(solutions_[i].coarsen(coarsening));
       }
-      BlackboxOptimizer nextLevel(cHypergraph, params_, rgen_, cSolutions);
+      BlackboxOptimizer nextLevel(cHypergraph, params_, rgen_, cSolutions, level_+1);
       nextLevel.runVCycle();
       for (size_t i = 0; i < nSols; ++i) {
         solutions_[i] = cSolutions[i].uncoarsen(coarsening);
@@ -213,6 +232,8 @@ void BlackboxOptimizer::runVCycle() {
   }
 
   checkConsistency();
+  for (int i = 0; i < level_; ++i) cout << "  ";
+  cout << "V-cycle step done" << endl;
 }
 
 void BlackboxOptimizer::checkConsistency() const {

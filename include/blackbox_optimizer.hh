@@ -12,18 +12,21 @@ class IncrementalSolution;
 class BlackboxOptimizer {
  public:
   struct Params {
+    int seed;
+    // V-cycling and solution pool
     int nSolutions;
     int nCycles;
+    // Coarsening options
     double minCoarseningFactor;
     double maxCoarseningFactor;
+    // Local search options
     double movesPerElement;
-    int seed;
   };
 
   static Solution run(const Hypergraph &hypergraph, const Params &params);
 
  private:
-  BlackboxOptimizer(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions);
+  BlackboxOptimizer(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level);
 
   void runVCycle();
   void runLocalSearch(Solution &solution);
@@ -42,6 +45,7 @@ class BlackboxOptimizer {
   const Params &params_;
   std::mt19937 &rgen_;
   std::vector<Solution> &solutions_;
+  Index level_;
 };
 } // End namespace minipart
 
