@@ -12,7 +12,7 @@
 using namespace std;
 
 namespace minipart {
-BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const Params &params, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level)
+BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const PartitioningParams &params, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level)
 : hypergraph_(hypergraph)
 , params_(params)
 , rgen_(rgen)
@@ -20,13 +20,16 @@ BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const Params 
 , level_(level) {
 }
 
-Solution BlackboxOptimizer::runInitialPlacement(const Hypergraph &hypergraph, const Params &params, mt19937 &rgen) {
-  uniform_int_distribution<int> partDist(0, hypergraph.nParts()-1);
-  Solution solution(hypergraph.nNodes(), hypergraph.nParts());
-  for (Index i = 0; i < hypergraph.nNodes(); ++i) {
-    solution[i] = partDist(rgen);
+void BlackboxOptimizer::runInitialPlacement() {
+  solutions_.clear();
+  for (Index i = 0; i < params_.nSolutions; ++i) {
+    uniform_int_distribution<int> partDist(0, hypergraph_.nParts()-1);
+    Solution solution(hypergraph_.nNodes(), hypergraph_.nParts());
+    for (Index i = 0; i < hypergraph_.nNodes(); ++i) {
+      solution[i] = partDist(rgen_);
+    }
+    solutions_.push_back(solution);
   }
-  return solution;
 }
 
 void BlackboxOptimizer::report() const {
@@ -35,56 +38,46 @@ void BlackboxOptimizer::report() const {
     return;
   }
 
-  Index nValidSols = 0;
-  Index bestOverflow = numeric_limits<Index>::max();
-  Index bestValidConnectivity = 0;
+  Solution solution = bestSolution();
+  Index ovf = hypergraph_.metricsSumOverflow(solution);
+  Index conn = hypergraph_.metricsConnectivity(solution);
 
-  for (const Solution &solution : solutions_) {
-    Index ovf = hypergraph_.metricsSumOverflow(solution);
-    Index conn = hypergraph_.metricsConnectivity(solution);
-    if (ovf == 0) {
-      if (nValidSols == 0) bestValidConnectivity = conn;
-      else bestValidConnectivity = min(conn, bestValidConnectivity);
-      bestOverflow = 0;
-      ++nValidSols;
-    }
-    else {
-      bestOverflow = min(ovf, bestOverflow);
-    }
+  if (ovf > 0) {
+    cout << "Best solution is not valid: overflow " << ovf << endl;
   }
-
-  //cout << solutions_.size() << " solutions" << endl;
-  if (nValidSols > 0) {
-    cout << nValidSols << " valid solutions" << endl;
-    cout << "Best solution has connectivity " << bestValidConnectivity << endl;
-  }
-  else {
-    cout << "Best solution is not valid: overflow " << bestOverflow << endl;
-  }
+  cout << "Best solution has connectivity " << conn << endl;
 }
 
-Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &params) {
+Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const PartitioningParams &params) {
   mt19937 rgen(params.seed);
-  vector<Solution> solutions;
-  for (int i = 0; i < params.nSolutions; ++i) {
-    solutions.push_back(runInitialPlacement(hypergraph, params, rgen));
+  vector<Solution> sols;
+  BlackboxOptimizer opt(hypergraph, params, rgen, sols, 0);
+  return opt.run();
+}
+
+Solution BlackboxOptimizer::run() {
+  runInitialPlacement();
+  for (int i = 0; i < params_.nCycles; ++i) {
+    if (params_.verbosity >= 2)
+      cout << "Starting V-cycle #" << i + 1 << endl;
+    runVCycle();
+    if (params_.verbosity >= 2 || (params_.verbosity >= 1 && i + 1 == params_.nCycles))
+      report();
   }
 
-  for (int i = 0; i < params.nCycles; ++i) {
-    BlackboxOptimizer opt(hypergraph, params, rgen, solutions, 0);
-    opt.runVCycle();
-    opt.report();
-  }
+  return bestSolution();
+}
 
+Solution BlackboxOptimizer::bestSolution() const {
   Index bestOverflow = numeric_limits<Index>::max();
   Index bestConnectivity = numeric_limits<Index>::max();
   size_t best = 0;
-  for (size_t i = 0; i < solutions.size(); ++i) {
-    Index ovf = hypergraph.metricsSumOverflow(solutions[i]);
+  for (size_t i = 0; i < solutions_.size(); ++i) {
+    Index ovf = hypergraph_.metricsSumOverflow(solutions_[i]);
     if (ovf > bestOverflow)
       continue;
 
-    Index conn = hypergraph.metricsConnectivity(solutions[i]);
+    Index conn = hypergraph_.metricsConnectivity(solutions_[i]);
     if (ovf < bestOverflow || conn < bestConnectivity) {
       bestOverflow = ovf;
       bestConnectivity = conn;
@@ -92,7 +85,7 @@ Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Params &para
     }
   }
 
-  return solutions[best];
+  return solutions_[best];
 }
 
 void BlackboxOptimizer::runLocalSearch(Solution &solution) {
@@ -198,8 +191,10 @@ Solution BlackboxOptimizer::computeCoarsening(const vector<Solution> &solutions)
 }
 
 void BlackboxOptimizer::runVCycle() {
-  for (int i = 0; i < level_; ++i) cout << "  ";
-  cout << "V-cycle step with " << hypergraph_.nNodes() << " nodes on " << solutions_.size() << " solutions" << endl;
+  if (params_.verbosity >= 3) {
+    for (int i = 0; i <= level_; ++i) cout << "  ";
+    cout << "V-cycle step with " << hypergraph_.nNodes() << " nodes on " << solutions_.size() << " solutions" << endl;
+  }
 
   shuffle(solutions_.begin(), solutions_.end(), rgen_);
 
@@ -232,8 +227,10 @@ void BlackboxOptimizer::runVCycle() {
   }
 
   checkConsistency();
-  for (int i = 0; i < level_; ++i) cout << "  ";
-  cout << "V-cycle step done" << endl;
+  if (params_.verbosity >= 3) {
+    for (int i = 0; i <= level_; ++i) cout << "  ";
+    cout << "V-cycle step done" << endl;
+  }
 }
 
 void BlackboxOptimizer::checkConsistency() const {

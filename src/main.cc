@@ -1,6 +1,7 @@
 // Copyright (C) 2019 Gabriel Gouvine - All Rights Reserved
 
 #include "hypergraph.hh"
+#include "partitioning_params.hh"
 #include "blackbox_optimizer.hh"
 
 #include <iostream>
@@ -28,7 +29,10 @@ po::options_description getBaseOptions() {
   desc.add_options()("imbalance,e", po::value<double>()->default_value(5.0),
                      "Imbalance factor (%)");
 
-  desc.add_options()("seed,s", po::value<Index>()->default_value(0),
+  desc.add_options()("verbosity,v", po::value<Index>()->default_value(1),
+                     "Verbosity level");
+
+  desc.add_options()("seed,s", po::value<size_t>()->default_value(0),
                      "Random seed");
 
   desc.add_options()("help,h", "Print this help");
@@ -37,7 +41,7 @@ po::options_description getBaseOptions() {
 }
 
 po::options_description getBlackboxOptions() {
-  po::options_description desc("Blackbox optimizer options");
+  po::options_description desc("Algorithm options");
 
   desc.add_options()("pool-size", po::value<Index>()->default_value(32),
                      "Number of solutions");
@@ -102,8 +106,9 @@ int main(int argc, char **argv) {
     vm["imbalance"].as<double>() / 100.0
   );
 
-  BlackboxOptimizer::Params optParams {
-    .seed = vm["seed"].as<Index>(),
+  PartitioningParams params {
+    .verbosity = vm["verbosity"].as<Index>(),
+    .seed = vm["seed"].as<size_t>(),
     .nSolutions = vm["pool-size"].as<Index>(),
     .nCycles = vm["v-cycles"].as<Index>(),
     .minCoarseningFactor = vm["min-c-factor"].as<double>(),
@@ -111,7 +116,7 @@ int main(int argc, char **argv) {
     .movesPerElement = vm["move-ratio"].as<double>(),
   };
 
-  Solution sol = BlackboxOptimizer::run(hg, optParams);
+  Solution sol = BlackboxOptimizer::run(hg, params);
   if (vm.count("output")) {
     ofstream os(vm["output"].as<string>());
     sol.write(os);
