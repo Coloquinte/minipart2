@@ -20,8 +20,8 @@ class Hypergraph {
   Index totalHedgeWeight() const;
   Index totalPartWeight() const;
 
-  const std::vector<Index> hedgeNodes(Index hedge) const { return hedgeToNodes_[hedge]; }
-  const std::vector<Index> nodeHedges(Index node) const { return nodeToHedges_[node]; }
+  const std::vector<Index> &hedgeNodes(Index hedge) const { return hedgeToNodes_[hedge]; }
+  const std::vector<Index> &nodeHedges(Index node) const { return nodeToHedges_[node]; }
 
   Index hedgeWeight (Index hedge) const { return hedgeWeights_[hedge]; }
   Index nodeWeight  (Index node)  const { return nodeWeights_[node]; }

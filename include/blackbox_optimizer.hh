@@ -28,6 +28,7 @@ class BlackboxOptimizer {
 
   static void runMovePass(IncrementalSolution &inc, Index nMoves, std::mt19937 &rgen);
   static void runSwapPass(IncrementalSolution &inc, Index nMoves, std::mt19937 &rgen);
+  static void runAbsorptionPass(IncrementalSolution &inc, Index nMoves, std::mt19937 &rgen);
 
   static Solution computeCoarsening(const std::vector<Solution> &solutions);
 

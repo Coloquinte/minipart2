@@ -16,6 +16,7 @@ class IncrementalSolution {
   Index nNodes() const { return hypergraph_.nNodes(); }
   Index nHedges() const { return hypergraph_.nHedges(); }
   Index nParts() const { return hypergraph_.nParts(); }
+  const Hypergraph &hypergraph() const { return hypergraph_; }
 
   const Solution& solution() const { return solution_; }
   Index solution(Index node) const { return solution_[node]; }

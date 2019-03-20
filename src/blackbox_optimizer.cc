@@ -91,7 +91,7 @@ Solution BlackboxOptimizer::bestSolution() const {
 void BlackboxOptimizer::runLocalSearch(Solution &solution) {
   IncrementalSolution inc(hypergraph_, solution);
   Index nMoves = params_.movesPerElement * inc.nNodes() * (inc.nParts()-1);
-  runMovePass(inc, nMoves, rgen_);
+  runAbsorptionPass(inc, nMoves, rgen_);
   runSwapPass(inc, nMoves, rgen_);
 }
 
@@ -128,6 +128,41 @@ void BlackboxOptimizer::runSwapPass(IncrementalSolution &inc, Index nMoves, mt19
         (inc.metricsSumOverflow() == overflow && inc.metricsSoed() > cost)) {
       inc.move(n1, p1);
       inc.move(n2, p2);
+    }
+  }
+}
+
+void BlackboxOptimizer::runAbsorptionPass(IncrementalSolution &inc, Index nMoves, mt19937 &rgen) {
+  uniform_int_distribution<int> partDist(0, inc.nParts()-1);
+  uniform_int_distribution<int> nodeDist(0, inc.nNodes()-1);
+  inc.hypergraph().checkConsistency();
+  vector<Index> candidates;
+  for (int iter = 0; iter < nMoves;) {
+    candidates.clear();
+    Index dst = partDist(rgen);
+    candidates.push_back(nodeDist(rgen));
+
+    while (!candidates.empty() && iter < nMoves) {
+      Index node = candidates.back();
+      candidates.pop_back();
+      Index src = inc.solution(node);
+      if (src == dst)
+        continue;
+      Index overflow = inc.metricsSumOverflow();
+      Index cost = inc.metricsSoed();
+      inc.move(node, dst);
+      if (inc.metricsSumOverflow() > overflow ||
+          (inc.metricsSumOverflow() == overflow && inc.metricsSoed() > cost)) {
+        inc.move(node, src);
+      }
+      else {
+        for (Index hEdge : inc.hypergraph().nodeHedges(node)) {
+          for (Index neighbour : inc.hypergraph().hedgeNodes(hEdge)) {
+            candidates.push_back(neighbour);
+          }
+        }
+      }
+      ++iter;
     }
   }
 }

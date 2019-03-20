@@ -112,7 +112,7 @@ void Hypergraph::constructNodes() {
 void Hypergraph::constructHedges() {
   hedgeToNodes_.clear();
   hedgeToNodes_.resize(hedgeWeights_.size());
-  for (Index node = 0; node < nHedges(); ++node) {
+  for (Index node = 0; node < nNodes(); ++node) {
     for (Index hedge : nodeHedges(node)) {
       hedgeToNodes_[hedge].push_back(node);
     }
