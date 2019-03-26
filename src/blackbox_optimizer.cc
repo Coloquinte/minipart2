@@ -2,6 +2,7 @@
 
 #include "blackbox_optimizer.hh"
 #include "incremental_solution.hh"
+#include "objective_function.hh"
 
 #include <iostream>
 #include <unordered_map>
@@ -99,14 +100,14 @@ void BlackboxOptimizer::runMovePass(IncrementalSolution &inc, Index nMoves, mt19
   uniform_int_distribution<int> partDist(0, inc.nParts()-1);
   uniform_int_distribution<int> nodeDist(0, inc.nNodes()-1);
   for (int iter = 0; iter < nMoves; ++iter) {
-    Index overflow = inc.metricsSumOverflow();
-    Index cost = inc.metricsSoed();
     Index node = nodeDist(rgen);
     Index src = inc.solution(node);
     Index dst = partDist(rgen);
+
+    ObjectiveConnectivity before(inc);
     inc.move(node, dst);
-    if (inc.metricsSumOverflow() > overflow ||
-        (inc.metricsSumOverflow() == overflow && inc.metricsSoed() > cost)) {
+    ObjectiveConnectivity after(inc);
+    if (before < after) {
       inc.move(node, src);
     }
   }
@@ -115,17 +116,17 @@ void BlackboxOptimizer::runMovePass(IncrementalSolution &inc, Index nMoves, mt19
 void BlackboxOptimizer::runSwapPass(IncrementalSolution &inc, Index nMoves, mt19937 &rgen) {
   uniform_int_distribution<int> nodeDist(0, inc.nNodes()-1);
   for (int iter = 0; iter < nMoves; ++iter) {
-    Index overflow = inc.metricsSumOverflow();
-    Index cost = inc.metricsSoed();
     Index n1 = nodeDist(rgen);
     Index n2 = nodeDist(rgen);
     Index p1 = inc.solution(n1);
     Index p2 = inc.solution(n1);
     if (p1 == p2) continue;
+
+    ObjectiveConnectivity before(inc);
     inc.move(n1, p2);
     inc.move(n2, p1);
-    if (inc.metricsSumOverflow() > overflow ||
-        (inc.metricsSumOverflow() == overflow && inc.metricsSoed() > cost)) {
+    ObjectiveConnectivity after(inc);
+    if (before < after) {
       inc.move(n1, p1);
       inc.move(n2, p2);
     }
@@ -148,11 +149,11 @@ void BlackboxOptimizer::runAbsorptionPass(IncrementalSolution &inc, Index nMoves
       Index src = inc.solution(node);
       if (src == dst)
         continue;
-      Index overflow = inc.metricsSumOverflow();
-      Index cost = inc.metricsSoed();
+
+      ObjectiveConnectivity before(inc);
       inc.move(node, dst);
-      if (inc.metricsSumOverflow() > overflow ||
-          (inc.metricsSumOverflow() == overflow && inc.metricsSoed() > cost)) {
+      ObjectiveConnectivity after(inc);
+      if (before < after) {
         inc.move(node, src);
       }
       else {
