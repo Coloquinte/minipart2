@@ -13,9 +13,10 @@
 using namespace std;
 
 namespace minipart {
-BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const PartitioningParams &params, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level)
+BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const PartitioningParams &params, const LocalSearch &localSearch, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level)
 : hypergraph_(hypergraph)
 , params_(params)
+, localSearch_(localSearch)
 , rgen_(rgen)
 , solutions_(solutions)
 , level_(level) {
@@ -49,10 +50,10 @@ void BlackboxOptimizer::report() const {
   cout << "Best solution has connectivity " << conn << endl;
 }
 
-Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const PartitioningParams &params) {
+Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const PartitioningParams &params, const LocalSearch &localSearch) {
   mt19937 rgen(params.seed);
   vector<Solution> sols;
-  BlackboxOptimizer opt(hypergraph, params, rgen, sols, 0);
+  BlackboxOptimizer opt(hypergraph, params, localSearch, rgen, sols, 0);
   return opt.run();
 }
 
@@ -87,85 +88,6 @@ Solution BlackboxOptimizer::bestSolution() const {
   }
 
   return solutions_[best];
-}
-
-void BlackboxOptimizer::runLocalSearch(Solution &solution) {
-  IncrementalSolution inc(hypergraph_, solution);
-  Index nMoves = params_.movesPerElement * inc.nNodes() * (inc.nParts()-1);
-  runAbsorptionPass(inc, nMoves, rgen_);
-  runSwapPass(inc, nMoves, rgen_);
-}
-
-void BlackboxOptimizer::runMovePass(IncrementalSolution &inc, Index nMoves, mt19937 &rgen) {
-  uniform_int_distribution<int> partDist(0, inc.nParts()-1);
-  uniform_int_distribution<int> nodeDist(0, inc.nNodes()-1);
-  for (int iter = 0; iter < nMoves; ++iter) {
-    Index node = nodeDist(rgen);
-    Index src = inc.solution(node);
-    Index dst = partDist(rgen);
-
-    ObjectiveConnectivity before(inc);
-    inc.move(node, dst);
-    ObjectiveConnectivity after(inc);
-    if (before < after) {
-      inc.move(node, src);
-    }
-  }
-}
-
-void BlackboxOptimizer::runSwapPass(IncrementalSolution &inc, Index nMoves, mt19937 &rgen) {
-  uniform_int_distribution<int> nodeDist(0, inc.nNodes()-1);
-  for (int iter = 0; iter < nMoves; ++iter) {
-    Index n1 = nodeDist(rgen);
-    Index n2 = nodeDist(rgen);
-    Index p1 = inc.solution(n1);
-    Index p2 = inc.solution(n1);
-    if (p1 == p2) continue;
-
-    ObjectiveConnectivity before(inc);
-    inc.move(n1, p2);
-    inc.move(n2, p1);
-    ObjectiveConnectivity after(inc);
-    if (before < after) {
-      inc.move(n1, p1);
-      inc.move(n2, p2);
-    }
-  }
-}
-
-void BlackboxOptimizer::runAbsorptionPass(IncrementalSolution &inc, Index nMoves, mt19937 &rgen) {
-  uniform_int_distribution<int> partDist(0, inc.nParts()-1);
-  uniform_int_distribution<int> nodeDist(0, inc.nNodes()-1);
-  inc.hypergraph().checkConsistency();
-  vector<Index> candidates;
-  for (int iter = 0; iter < nMoves;) {
-    candidates.clear();
-    Index dst = partDist(rgen);
-    candidates.push_back(nodeDist(rgen));
-
-    while (!candidates.empty() && iter < nMoves) {
-      Index node = candidates.back();
-      candidates.pop_back();
-      Index src = inc.solution(node);
-      if (src == dst)
-        continue;
-
-      ObjectiveConnectivity before(inc);
-      inc.move(node, dst);
-      ObjectiveConnectivity after(inc);
-      if (before < after) {
-        inc.move(node, src);
-      }
-      else {
-        for (Index hEdge : inc.hypergraph().nodeHedges(node)) {
-          for (Index neighbour : inc.hypergraph().hedgeNodes(hEdge)) {
-            candidates.push_back(neighbour);
-          }
-        }
-      }
-      ++iter;
-    }
-  }
 }
 
 namespace {
@@ -239,7 +161,7 @@ void BlackboxOptimizer::runVCycle() {
   //    * we used all solutions in the pool: go to the next level
   //    * the coarsening is too large: stop the recursion
   for (size_t nSols = 1; nSols <= solutions_.size(); ++nSols) {
-    runLocalSearch(solutions_[nSols-1]);
+    localSearch_.run(hypergraph_, solutions_[nSols-1], params_, rgen_);
     Solution coarsening = computeCoarsening(vector<Solution>(solutions_.begin(), solutions_.begin() + nSols));
     if (coarsening.nParts() > hypergraph_.nNodes() / params_.minCoarseningFactor) {
       // No success in coarsening anymore; time to stop the cycle
@@ -252,11 +174,11 @@ void BlackboxOptimizer::runVCycle() {
       for (size_t i = 0; i < nSols; ++i) {
         cSolutions.emplace_back(solutions_[i].coarsen(coarsening));
       }
-      BlackboxOptimizer nextLevel(cHypergraph, params_, rgen_, cSolutions, level_+1);
+      BlackboxOptimizer nextLevel(cHypergraph, params_, localSearch_, rgen_, cSolutions, level_+1);
       nextLevel.runVCycle();
       for (size_t i = 0; i < nSols; ++i) {
         solutions_[i] = cSolutions[i].uncoarsen(coarsening);
-        runLocalSearch(solutions_[i]);
+        localSearch_.run(hypergraph_, solutions_[i], params_, rgen_);
       }
       break;
     }

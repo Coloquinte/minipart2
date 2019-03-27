@@ -8,6 +8,9 @@
 
 namespace minipart {
 typedef std::int32_t Index;
+class Hypergraph;
+class Solution;
+class IncrementalSolution;
 } // End namespace minipart
 
 #endif

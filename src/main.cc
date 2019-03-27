@@ -3,6 +3,8 @@
 #include "hypergraph.hh"
 #include "partitioning_params.hh"
 #include "blackbox_optimizer.hh"
+#include "local_search.hh"
+#include "objective_function.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -116,7 +118,8 @@ int main(int argc, char **argv) {
     .movesPerElement = vm["move-ratio"].as<double>(),
   };
 
-  Solution sol = BlackboxOptimizer::run(hg, params);
+  GenericLocalSearch<ObjectiveConnectivity> localSearch;
+  Solution sol = BlackboxOptimizer::run(hg, params, localSearch);
   if (vm.count("output")) {
     ofstream os(vm["output"].as<string>());
     sol.write(os);
