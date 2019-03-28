@@ -10,7 +10,7 @@ namespace minipart {
 typedef std::int32_t Index;
 class Hypergraph;
 class Solution;
-class IncrementalSolution;
+class PartitioningParams;
 } // End namespace minipart
 
 #endif

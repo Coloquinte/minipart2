@@ -13,6 +13,7 @@ SET (SOURCES
   src/solution.cc
   src/incremental_solution.cc
   src/blackbox_optimizer.cc
+  src/local_search.cc
   src/objective_function.cc
   src/io.cc
 )

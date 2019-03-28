@@ -10,48 +10,50 @@
 #include "solution.hh"
 #include "incremental_solution.hh"
 
+#include <iosfwd>
+
 namespace minipart {
 
-class ObjectiveConnectivity {
+class SoedObjectiveType {
  public:
-  ObjectiveConnectivity(const Hypergraph &h, const Solution &s) {
+  SoedObjectiveType(const Hypergraph &h, const Solution &s) {
     overflow_ = h.metricsSumOverflow(s);
     connectivity_ = h.metricsConnectivity(s);
   }
 
-  ObjectiveConnectivity(const IncrementalSolution &inc) {
+  SoedObjectiveType(const IncrementalSolution &inc) {
     overflow_ = inc.metricsSumOverflow();
     connectivity_ = inc.metricsConnectivity();
   }
 
-  bool operator<(const ObjectiveConnectivity &o) const {
+  bool operator<(const SoedObjectiveType &o) const {
     if (overflow_ != o.overflow_)
       return overflow_ < o.overflow_;
     return connectivity_ < o.connectivity_;
   }
 
-  void report() const;
+  void report(std::ostream &os) const;
 
  private:
   Index overflow_;
   Index connectivity_;
 };
 
-class ObjectiveCut {
+class CutObjectiveType {
  public:
-  ObjectiveCut(const Hypergraph &h, const Solution &s) {
+  CutObjectiveType(const Hypergraph &h, const Solution &s) {
     overflow_ = h.metricsSumOverflow(s);
     cut_ = h.metricsCut(s);
     connectivity_ = h.metricsConnectivity(s);
   }
 
-  ObjectiveCut(const IncrementalSolution &inc) {
+  CutObjectiveType(const IncrementalSolution &inc) {
     overflow_ = inc.metricsSumOverflow();
     cut_ = inc.metricsCut();
     connectivity_ = inc.metricsConnectivity();
   }
 
-  bool operator<(const ObjectiveCut &o) const {
+  bool operator<(const CutObjectiveType &o) const {
     if (overflow_ != o.overflow_)
       return overflow_ < o.overflow_;
     if (connectivity_ != o.connectivity_)
@@ -59,7 +61,7 @@ class ObjectiveCut {
     return cut_ < o.cut_;
   }
 
-  void report() const;
+  void report(std::ostream &os) const;
 
  private:
   Index overflow_;

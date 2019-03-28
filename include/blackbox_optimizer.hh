@@ -9,7 +9,6 @@
 #include <random>
 
 namespace minipart {
-class IncrementalSolution;
 
 class BlackboxOptimizer {
  public:
@@ -19,10 +18,10 @@ class BlackboxOptimizer {
   BlackboxOptimizer(const Hypergraph &hypergraph, const PartitioningParams &params, const LocalSearch &localSearch, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level);
 
   Solution run();
+  Solution bestSolution() const;
   void runInitialPlacement();
   void runVCycle();
 
-  Solution bestSolution() const;
   void report() const;
   void checkConsistency() const;
 

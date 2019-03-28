@@ -7,18 +7,18 @@ using namespace std;
 
 namespace minipart {
 
-void ObjectiveConnectivity::report() const {
+void SoedObjectiveType::report(ostream &os) const {
   if (overflow_ != 0)
-    cout << "Overflow: " << overflow_ << ", connectivity: " << connectivity_;
+    os << "Overflow: " << overflow_ << ", connectivity: " << connectivity_;
   else
-    cout << "Connectivity: " << connectivity_;
+    os << "Connectivity: " << connectivity_;
 }
 
-void ObjectiveCut::report() const {
+void CutObjectiveType::report(ostream &os) const {
   if (overflow_ != 0)
-    cout << "Overflow: " << overflow_ << ", cut: " << cut_;
+    os << "Overflow: " << overflow_ << ", cut: " << cut_;
   else
-    cout << "Cut: " << cut_ << ", connectivity: " << connectivity_;
+    os << "Cut: " << cut_ << ", connectivity: " << connectivity_;
 }
 
 } // End namespace minipart

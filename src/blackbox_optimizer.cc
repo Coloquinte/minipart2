@@ -39,15 +39,9 @@ void BlackboxOptimizer::report() const {
     cout << "No solution in the pool" << endl;
     return;
   }
-
   Solution solution = bestSolution();
-  Index ovf = hypergraph_.metricsSumOverflow(solution);
-  Index conn = hypergraph_.metricsConnectivity(solution);
-
-  if (ovf > 0) {
-    cout << "Best solution is not valid: overflow " << ovf << endl;
-  }
-  cout << "Best solution has connectivity " << conn << endl;
+  localSearch_.report(hypergraph_, solution, cout);
+  cout << endl;
 }
 
 Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const PartitioningParams &params, const LocalSearch &localSearch) {
@@ -71,22 +65,13 @@ Solution BlackboxOptimizer::run() {
 }
 
 Solution BlackboxOptimizer::bestSolution() const {
-  Index bestOverflow = numeric_limits<Index>::max();
-  Index bestConnectivity = numeric_limits<Index>::max();
+  assert (!solutions_.empty());
   size_t best = 0;
-  for (size_t i = 0; i < solutions_.size(); ++i) {
-    Index ovf = hypergraph_.metricsSumOverflow(solutions_[i]);
-    if (ovf > bestOverflow)
-      continue;
-
-    Index conn = hypergraph_.metricsConnectivity(solutions_[i]);
-    if (ovf < bestOverflow || conn < bestConnectivity) {
-      bestOverflow = ovf;
-      bestConnectivity = conn;
+  for (size_t i = 1; i < solutions_.size(); ++i) {
+    if (localSearch_.compare(hypergraph_, solutions_[i], solutions_[best])) {
       best = i;
     }
   }
-
   return solutions_[best];
 }
 

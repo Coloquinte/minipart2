@@ -4,7 +4,6 @@
 #include "partitioning_params.hh"
 #include "blackbox_optimizer.hh"
 #include "local_search.hh"
-#include "objective_function.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -30,6 +29,9 @@ po::options_description getBaseOptions() {
 
   desc.add_options()("imbalance,e", po::value<double>()->default_value(5.0),
                      "Imbalance factor (%)");
+
+  desc.add_options()("objective", po::value<string>()->default_value("soed"),
+                     "Objective function: cut or soed");
 
   desc.add_options()("verbosity,v", po::value<Index>()->default_value(1),
                      "Verbosity level");
@@ -118,14 +120,17 @@ int main(int argc, char **argv) {
     .movesPerElement = vm["move-ratio"].as<double>(),
   };
 
-  GenericLocalSearch<ObjectiveConnectivity> localSearch;
-  Solution sol = BlackboxOptimizer::run(hg, params, localSearch);
+  unique_ptr<LocalSearch> localSearchPtr;
+  if (vm["objective"].as<string>() == "cut")
+    localSearchPtr = LocalSearch::cut();
+  else
+    localSearchPtr = LocalSearch::soed();
+
+  Solution sol = BlackboxOptimizer::run(hg, params, *localSearchPtr);
   if (vm.count("output")) {
     ofstream os(vm["output"].as<string>());
     sol.write(os);
   }
-
-
 
   return 0;
 }
