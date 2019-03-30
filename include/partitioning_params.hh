@@ -20,6 +20,11 @@ struct PartitioningParams {
 
   // Local search options
   double movesPerElement;
+
+  // Problem statistics
+  Index nNodes;
+  Index nHedges;
+  Index nPins;
 };
 
 } // End namespace minipart

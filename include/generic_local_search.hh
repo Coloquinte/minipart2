@@ -116,6 +116,7 @@ inline void GenericLocalSearch<TObjectiveType>::Runner::absorptionMoves(Index nM
       }
       else {
         for (Index hEdge : inc_.hypergraph().nodeHedges(node)) {
+          // TODO: try better rules that do not involve all pins or all partitions if possible
           for (Index neighbour : inc_.hypergraph().hedgeNodes(hEdge)) {
             candidates_.push_back(neighbour);
           }

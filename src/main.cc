@@ -98,9 +98,7 @@ po::variables_map parseArguments(int argc, char **argv) {
   return vm;
 }
 
-int main(int argc, char **argv) {
-  po::variables_map vm = parseArguments(argc, argv);
-
+Hypergraph readHypergraph(const po::variables_map &vm) {
   ifstream f(vm["input"].as<string>());
   Hypergraph hg = Hypergraph::readHgr(f);
   hg.checkConsistency();
@@ -109,8 +107,11 @@ int main(int argc, char **argv) {
     vm["partitions"].as<Index>(),
     vm["imbalance"].as<double>() / 100.0
   );
+  return hg;
+}
 
-  PartitioningParams params {
+PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg) {
+  return PartitioningParams {
     .verbosity = vm["verbosity"].as<Index>(),
     .seed = vm["seed"].as<size_t>(),
     .nSolutions = vm["pool-size"].as<Index>(),
@@ -118,13 +119,26 @@ int main(int argc, char **argv) {
     .minCoarseningFactor = vm["min-c-factor"].as<double>(),
     .maxCoarseningFactor = vm["max-c-factor"].as<double>(),
     .movesPerElement = vm["move-ratio"].as<double>(),
+    .nNodes = hg.nNodes(),
+    .nHedges = hg.nHedges(),
+    .nPins = hg.nPins()
   };
+}
 
-  unique_ptr<LocalSearch> localSearchPtr;
+unique_ptr<LocalSearch> readLocalSearch(const po::variables_map &vm) {
   if (vm["objective"].as<string>() == "cut")
-    localSearchPtr = LocalSearch::cut();
+    return LocalSearch::cut();
   else
-    localSearchPtr = LocalSearch::soed();
+    return LocalSearch::soed();
+}
+
+
+int main(int argc, char **argv) {
+  po::variables_map vm = parseArguments(argc, argv);
+
+  Hypergraph hg = readHypergraph(vm);
+  PartitioningParams params = readParams(vm, hg);
+  unique_ptr<LocalSearch> localSearchPtr = readLocalSearch(vm);
 
   Solution sol = BlackboxOptimizer::run(hg, params, *localSearchPtr);
   if (vm.count("output")) {
