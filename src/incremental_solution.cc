@@ -7,6 +7,7 @@
 using namespace std;
 
 namespace minipart {
+
 IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, Solution &solution)
 : hypergraph_(hypergraph)
 , solution_(solution) {

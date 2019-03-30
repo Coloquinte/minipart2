@@ -30,8 +30,8 @@ po::options_description getBaseOptions() {
   desc.add_options()("imbalance,e", po::value<double>()->default_value(5.0),
                      "Imbalance factor (%)");
 
-  desc.add_options()("objective", po::value<string>()->default_value("soed"),
-                     "Objective function: cut or soed");
+  desc.add_options()("objective", po::value<ObjectiveType>()->default_value(ObjectiveType::Soed),
+                     "Objective function: cut, soed or max-degree");
 
   desc.add_options()("verbosity,v", po::value<Index>()->default_value(1),
                      "Verbosity level");
@@ -125,11 +125,43 @@ PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg)
   };
 }
 
+void report(const Hypergraph &hg, const Solution &sol) {
+  cout << "Cut: " << hg.metricsCut(sol) << endl;
+  cout << "Connectivity: " << hg.metricsConnectivity(sol) << endl;
+  cout << endl;
+
+  std::vector<Index> usage  = hg.metricsPartitionUsage(sol);
+  cout << "Partition usage:" << endl;
+  for (Index p = 0; p < hg.nParts(); ++p) {
+    cout << "\tPart#" << p << "  \t";
+    cout << usage[p] << "\t/ " << hg.partWeight(p) << "\t";
+    if (usage[p] > hg.partWeight(p)) cout << "(overflow)";
+    cout << endl;
+  }
+  cout << endl;
+
+  if (hg.nParts() <= 2) return;
+
+  std::vector<Index> degree = hg.metricsPartitionDegree(sol);
+  cout << "Partition degrees:" << endl;
+  for (Index p = 0; p < hg.nParts(); ++p) {
+    cout << "\tPart#" << p << "  \t";
+    cout << degree[p] << endl;
+  }
+}
+
 unique_ptr<LocalSearch> readLocalSearch(const po::variables_map &vm) {
-  if (vm["objective"].as<string>() == "cut")
-    return LocalSearch::cut();
-  else
-    return LocalSearch::soed();
+  switch (vm["objective"].as<ObjectiveType>()) {
+    case ObjectiveType::Cut:
+      return LocalSearch::cut();
+    case ObjectiveType::Soed:
+      return LocalSearch::soed();
+    case ObjectiveType::MaxDegree:
+      // TODO
+      return LocalSearch::soed();
+    default:
+      return LocalSearch::soed();
+  }
 }
 
 
@@ -141,6 +173,11 @@ int main(int argc, char **argv) {
   unique_ptr<LocalSearch> localSearchPtr = readLocalSearch(vm);
 
   Solution sol = BlackboxOptimizer::run(hg, params, *localSearchPtr);
+
+  if (params.verbosity >= 1) {
+    report(hg, sol);
+  }
+
   if (vm.count("output")) {
     ofstream os(vm["output"].as<string>());
     sol.write(os);

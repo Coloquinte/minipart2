@@ -4,7 +4,18 @@
 
 #include "common.hh"
 
+#include <iosfwd>
+
 namespace minipart {
+
+enum class ObjectiveType {
+  Cut,
+  Soed,
+  MaxDegree
+};
+
+std::istream & operator>>(std::istream &, ObjectiveType &);
+std::ostream & operator<<(std::ostream &, const ObjectiveType &);
 
 struct PartitioningParams {
   int verbosity;

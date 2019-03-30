@@ -3,7 +3,6 @@
 #define MINIPART_BLACKBOX_OPTIMIZER_HH
 
 #include "hypergraph.hh"
-#include "partitioning_params.hh"
 #include "local_search.hh"
 
 #include <random>

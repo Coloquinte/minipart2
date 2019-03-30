@@ -152,12 +152,7 @@ Index Hypergraph::metricsConnectivity(const Solution &solution) const {
 
 Index Hypergraph::metricsSumOverflow(const Solution &solution) const {
   assert (solution.nNodes() == nNodes());
-  assert (solution.nParts() == nParts());
-  vector<Index> usage(nParts(), 0);
-  for (int i = 0; i < nNodes(); ++i) {
-    assert (solution[i] >= 0 && solution[i] < nParts());
-    usage[solution[i]] += nodeWeight(i);
-  }
+  vector<Index> usage = metricsPartitionUsage(solution);
   Index ret = 0;
   for (int i = 0; i < nParts(); ++i) {
     Index ovf = usage[i] - partWeights_[i];
@@ -165,6 +160,34 @@ Index Hypergraph::metricsSumOverflow(const Solution &solution) const {
       ret += ovf;
   }
   return ret;
+}
+
+std::vector<Index> Hypergraph::metricsPartitionUsage(const Solution &solution) const {
+  assert (solution.nParts() == nParts());
+  vector<Index> usage(nParts(), 0);
+  for (int i = 0; i < nNodes(); ++i) {
+    assert (solution[i] >= 0 && solution[i] < nParts());
+    usage[solution[i]] += nodeWeight(i);
+  }
+  return usage;
+}
+
+std::vector<Index> Hypergraph::metricsPartitionDegree(const Solution &solution) const {
+  assert (solution.nParts() == nParts());
+  vector<Index> degree(nParts(), 0);
+  unordered_set<Index> parts;
+  for (int i = 0; i < nHedges(); ++i) {
+    parts.clear();
+    for (Index node : hedgeNodes(i)) {
+      parts.insert(solution[node]);
+    }
+    if (parts.size() > 1) {
+      for (Index p : parts) {
+        degree[p] += hedgeWeight(i);
+      }
+    }
+  }
+  return degree;
 }
 
 bool Hypergraph::cut(const Solution &solution, Index hedge) const {

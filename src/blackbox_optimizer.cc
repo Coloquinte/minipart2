@@ -1,8 +1,8 @@
 // Copyright (C) 2019 Gabriel Gouvine - All Rights Reserved
 
 #include "blackbox_optimizer.hh"
-#include "incremental_solution.hh"
 #include "objective_function.hh"
+#include "partitioning_params.hh"
 
 #include <iostream>
 #include <unordered_map>
@@ -57,9 +57,11 @@ Solution BlackboxOptimizer::run() {
     if (params_.verbosity >= 2)
       cout << "Starting V-cycle #" << i + 1 << endl;
     runVCycle();
-    if (params_.verbosity >= 2 || (params_.verbosity >= 1 && i + 1 == params_.nCycles))
+    if (params_.verbosity >= 2)
       report();
   }
+  if (params_.verbosity >= 2)
+    cout << endl;
 
   return bestSolution();
 }

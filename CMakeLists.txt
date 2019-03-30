@@ -15,6 +15,7 @@ SET (SOURCES
   src/blackbox_optimizer.cc
   src/local_search.cc
   src/objective_function.cc
+  src/partitioning_params.cc
   src/io.cc
 )
 
