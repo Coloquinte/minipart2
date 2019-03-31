@@ -151,7 +151,6 @@ Index Hypergraph::metricsConnectivity(const Solution &solution) const {
 }
 
 Index Hypergraph::metricsSumOverflow(const Solution &solution) const {
-  assert (solution.nNodes() == nNodes());
   vector<Index> usage = metricsPartitionUsage(solution);
   Index ret = 0;
   for (int i = 0; i < nParts(); ++i) {
@@ -162,7 +161,13 @@ Index Hypergraph::metricsSumOverflow(const Solution &solution) const {
   return ret;
 }
 
+Index Hypergraph::metricsMaxDegree(const Solution &solution) const {
+  vector<Index> degree = metricsPartitionDegree(solution);
+  return *max_element(degree.begin(), degree.end());
+}
+
 std::vector<Index> Hypergraph::metricsPartitionUsage(const Solution &solution) const {
+  assert (solution.nNodes() == nNodes());
   assert (solution.nParts() == nParts());
   vector<Index> usage(nParts(), 0);
   for (int i = 0; i < nNodes(); ++i) {
@@ -173,6 +178,7 @@ std::vector<Index> Hypergraph::metricsPartitionUsage(const Solution &solution) c
 }
 
 std::vector<Index> Hypergraph::metricsPartitionDegree(const Solution &solution) const {
+  assert (solution.nNodes() == nNodes());
   assert (solution.nParts() == nParts());
   vector<Index> degree(nParts(), 0);
   unordered_set<Index> parts;

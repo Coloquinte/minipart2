@@ -3,6 +3,7 @@
 #include "incremental_solution.hh"
 
 #include <cassert>
+#include <algorithm>
 
 using namespace std;
 
@@ -16,8 +17,20 @@ IncrementalSolution::IncrementalSolution(const Hypergraph &hypergraph, Solution 
   partitionDemands_ = computePartitionDemands();
   hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition();
   hedgeDegrees_ = computeHedgeDegrees();
+  partitionDegrees_ = computePartitionDegrees();
   currentCut_ = computeCut();
   currentSoed_ = computeSoed();
+}
+
+void IncrementalSolution::checkConsistency() const {
+  assert (hypergraph_.nNodes() == solution_.nNodes());
+  assert (hypergraph_.nParts() == solution_.nParts());
+  assert (partitionDemands_ == computePartitionDemands());
+  assert (hedgeNbPinsPerPartition_ == computeHedgeNbPinsPerPartition());
+  assert (hedgeDegrees_ == computeHedgeDegrees());
+  assert (partitionDegrees_ == computePartitionDegrees());
+  assert (currentCut_ == computeCut());
+  assert (currentSoed_ == computeSoed());
 }
 
 vector<Index> IncrementalSolution::computePartitionDemands() const {
@@ -52,6 +65,19 @@ vector<Index> IncrementalSolution::computeHedgeDegrees() const {
   return ret;
 }
 
+vector<Index> IncrementalSolution::computePartitionDegrees() const {
+  vector<Index> ret(nParts(), 0);
+  for (Index hedge = 0; hedge < nHedges(); ++hedge) {
+    if (!cut(hedge)) continue;
+    for (Index p = 0; p < nParts(); ++p) {
+      if (hedgeNbPinsPerPartition_[hedge][p] != 0) {
+        ret[p] += hypergraph_.hedgeWeight(hedge);
+      }
+    }
+  }
+  return ret;
+}
+
 Index IncrementalSolution::computeCut() const {
   Index ret = 0;
   for (Index hedge = 0; hedge < nHedges(); ++hedge) {
@@ -77,6 +103,10 @@ Index IncrementalSolution::metricsSumOverflow() const {
   return ret;
 }
 
+Index IncrementalSolution::metricsMaxDegree() const {
+  return *max_element(partitionDegrees_.begin(), partitionDegrees_.end());
+}
+
 void IncrementalSolution::move(Index node, Index to) {
   assert (to < nParts() && to >= 0);
   Index from = solution_[node];
@@ -84,21 +114,45 @@ void IncrementalSolution::move(Index node, Index to) {
   solution_[node] = to;
   partitionDemands_[to]   += hypergraph_.nodeWeight(node);
   partitionDemands_[from] -= hypergraph_.nodeWeight(node);
+
   for (Index hedge : hypergraph_.nodeHedges(node)) {
     vector<Index> &pins = hedgeNbPinsPerPartition_[hedge];
     ++pins[to];
     --pins[from];
+    bool becomesCut = false;
+    bool becomesUncut = false;
     if (pins[to] == 1 && pins[from] != 0) {
       ++hedgeDegrees_[hedge];
-      if (hedgeDegrees_[hedge] == 2)
+      if (hedgeDegrees_[hedge] == 2) {
         currentCut_ += hypergraph_.hedgeWeight(hedge);
+        becomesCut = true;
+      }
       currentSoed_ += hypergraph_.hedgeWeight(hedge);
     }
     if (pins[to] != 1 && pins[from] == 0) {
       --hedgeDegrees_[hedge];
-      if (hedgeDegrees_[hedge] == 1)
+      if (hedgeDegrees_[hedge] == 1) {
         currentCut_ -= hypergraph_.hedgeWeight(hedge);
+        becomesUncut = true;
+      }
       currentSoed_ -= hypergraph_.hedgeWeight(hedge);
+    }
+
+    if (becomesUncut) {
+      partitionDegrees_[from] -= hypergraph_.hedgeWeight(hedge);
+      partitionDegrees_[to] -= hypergraph_.hedgeWeight(hedge);
+    }
+    else if (becomesCut) {
+      partitionDegrees_[from] += hypergraph_.hedgeWeight(hedge);
+      partitionDegrees_[to] += hypergraph_.hedgeWeight(hedge);
+    }
+    else if (hedgeDegrees_[hedge] >= 2) {
+      if (pins[from] == 0) {
+        partitionDegrees_[from] -= hypergraph_.hedgeWeight(hedge);
+      }
+      if (pins[to] == 1) {
+        partitionDegrees_[to] += hypergraph_.hedgeWeight(hedge);
+      }
     }
   }
 }

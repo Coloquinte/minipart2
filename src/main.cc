@@ -157,8 +157,7 @@ unique_ptr<LocalSearch> readLocalSearch(const po::variables_map &vm) {
     case ObjectiveType::Soed:
       return LocalSearch::soed();
     case ObjectiveType::MaxDegree:
-      // TODO
-      return LocalSearch::soed();
+      return LocalSearch::maxDegree();
     default:
       return LocalSearch::soed();
   }

@@ -21,5 +21,12 @@ void CutObjectiveType::report(ostream &os) const {
     os << "Cut: " << cut_ << ", connectivity: " << connectivity_;
 }
 
+void MaxDegreeObjectiveType::report(ostream &os) const {
+  if (overflow_ != 0)
+    os << "Overflow: " << overflow_ << ", max degree: " << maxDegree_;
+  else
+    os << "Max degree: " << maxDegree_ << ", connectivity: " << connectivity_;
+}
+
 } // End namespace minipart
 

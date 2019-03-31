@@ -32,6 +32,8 @@ class Hypergraph {
   Index metricsSoed(const Solution &solution) const;
   Index metricsConnectivity(const Solution &solution) const;
   Index metricsSumOverflow(const Solution &solution) const;
+  Index metricsMaxDegree(const Solution &solution) const;
+
   std::vector<Index> metricsPartitionUsage(const Solution &solution) const;
   std::vector<Index> metricsPartitionDegree(const Solution &solution) const;
 

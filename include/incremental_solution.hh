@@ -21,9 +21,6 @@ class IncrementalSolution {
   const Solution& solution() const { return solution_; }
   Index solution(Index node) const { return solution_[node]; }
 
-  bool cut(Index hedge) const { return hedgeDegrees_[hedge] != 0; }
-  Index degree(Index hedge) const { return hedgeDegrees_[hedge]; }
-
   Index demand(Index partition) const { return partitionDemands_[partition]; }
   Index capacity(Index partition) const { return hypergraph_.partWeight(partition); }
 
@@ -32,11 +29,19 @@ class IncrementalSolution {
   Index metricsSoed() const { return currentSoed_; }
   Index metricsConnectivity() const { return currentSoed_ - nHedges(); }
   Index metricsSumOverflow() const;
+  Index metricsMaxDegree() const;
+
+  void checkConsistency() const;
+
+ private:
+  bool cut(Index hedge) const { return hedgeDegrees_[hedge] > 1; }
+  Index degree(Index hedge) const { return hedgeDegrees_[hedge]; }
 
  private:
   std::vector<Index> computePartitionDemands() const;
   std::vector<std::vector<Index> > computeHedgeNbPinsPerPartition() const;
   std::vector<Index> computeHedgeDegrees() const;
+  std::vector<Index> computePartitionDegrees() const;
   Index computeCut() const;
   Index computeSoed() const;
 
@@ -50,6 +55,7 @@ class IncrementalSolution {
   // Hyperedge states
   std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
   std::vector<Index> hedgeDegrees_;
+  std::vector<Index> partitionDegrees_;
   Index currentCut_;
   Index currentSoed_;
 };

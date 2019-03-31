@@ -19,6 +19,7 @@ class LocalSearch {
 
   static std::unique_ptr<LocalSearch> cut();
   static std::unique_ptr<LocalSearch> soed();
+  static std::unique_ptr<LocalSearch> maxDegree();
 };
 
 } // End namespace minipart

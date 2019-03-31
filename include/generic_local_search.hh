@@ -125,6 +125,7 @@ inline void GenericLocalSearch<TObjectiveType>::Runner::absorptionMoves(Index nM
       ++iter;
     }
   }
+  inc_.checkConsistency();
 }
 
 template<typename TObjectiveType>

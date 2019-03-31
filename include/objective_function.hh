@@ -56,9 +56,9 @@ class CutObjectiveType {
   bool operator<(const CutObjectiveType &o) const {
     if (overflow_ != o.overflow_)
       return overflow_ < o.overflow_;
-    if (connectivity_ != o.connectivity_)
-      return connectivity_ < o.connectivity_;
-    return cut_ < o.cut_;
+    if (cut_ != o.cut_)
+      return cut_ < o.cut_;
+    return connectivity_ < o.connectivity_;
   }
 
   void report(std::ostream &os) const;
@@ -68,6 +68,37 @@ class CutObjectiveType {
   Index cut_;
   Index connectivity_;
 };
+
+class MaxDegreeObjectiveType {
+ public:
+  MaxDegreeObjectiveType(const Hypergraph &h, const Solution &s) {
+    overflow_ = h.metricsSumOverflow(s);
+    maxDegree_ = h.metricsMaxDegree(s);
+    connectivity_ = h.metricsConnectivity(s);
+  }
+
+  MaxDegreeObjectiveType(const IncrementalSolution &inc) {
+    overflow_ = inc.metricsSumOverflow();
+    maxDegree_ = inc.metricsMaxDegree();
+    connectivity_ = inc.metricsConnectivity();
+  }
+
+  bool operator<(const MaxDegreeObjectiveType &o) const {
+    if (overflow_ != o.overflow_)
+      return overflow_ < o.overflow_;
+    if (maxDegree_ != o.maxDegree_)
+      return maxDegree_ < o.maxDegree_;
+    return connectivity_ < o.connectivity_;
+  }
+
+  void report(std::ostream &os) const;
+
+ private:
+  Index overflow_;
+  Index connectivity_;
+  Index maxDegree_;
+};
+
 
 } // End namespace minipart
 
