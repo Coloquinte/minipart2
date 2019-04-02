@@ -28,6 +28,7 @@ struct PartitioningParams {
   // Coarsening options
   double minCoarseningFactor;
   double maxCoarseningFactor;
+  Index minCoarseningNodes;
 
   // Local search options
   double movesPerElement;

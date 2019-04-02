@@ -6,6 +6,7 @@
 #include "local_search.hh"
 
 #include <random>
+#include <string>
 
 namespace minipart {
 
@@ -19,9 +20,11 @@ class BlackboxOptimizer {
   Solution run();
   Solution bestSolution() const;
   void runInitialPlacement();
+  void runLocalSearch();
   void runVCycle();
 
-  void report() const;
+  void report(const std::string &step) const;
+  void report(const std::string &step, Index nSols) const;
   void checkConsistency() const;
 
   static Solution computeCoarsening(const std::vector<Solution> &solutions);

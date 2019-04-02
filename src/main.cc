@@ -54,10 +54,13 @@ po::options_description getBlackboxOptions() {
                      "Number of V-cycles");
 
   desc.add_options()("min-c-factor", po::value<double>()->default_value(1.2),
-                     "Minimum reduction in coarsening");
+                     "Minimum coarsening factor");
 
   desc.add_options()("max-c-factor", po::value<double>()->default_value(3.0),
-                     "Maximum reduction in coarsening");
+                     "Maximum coarsening factors");
+
+  desc.add_options()("min-c-nodes", po::value<Index>()->default_value(50),
+                     "Minimum nodes per partition for coarsening");
 
   desc.add_options()("move-ratio", po::value<double>()->default_value(5.0),
                      "Number of moves per vertex");
@@ -118,6 +121,7 @@ PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg)
     .nCycles = vm["v-cycles"].as<Index>(),
     .minCoarseningFactor = vm["min-c-factor"].as<double>(),
     .maxCoarseningFactor = vm["max-c-factor"].as<double>(),
+    .minCoarseningNodes = vm["min-c-nodes"].as<Index>(),
     .movesPerElement = vm["move-ratio"].as<double>(),
     .nNodes = hg.nNodes(),
     .nHedges = hg.nHedges(),
@@ -126,6 +130,11 @@ PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg)
 }
 
 void report(const Hypergraph &hg, const Solution &sol) {
+  cout << "Nodes: " << hg.nNodes() << endl;
+  cout << "Edges: " << hg.nHedges() << endl;
+  cout << "Pins: " << hg.nPins() << endl;
+  cout << endl;
+
   cout << "Cut: " << hg.metricsCut(sol) << endl;
   cout << "Connectivity: " << hg.metricsConnectivity(sol) << endl;
   cout << endl;

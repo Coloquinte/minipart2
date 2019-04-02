@@ -34,14 +34,20 @@ void BlackboxOptimizer::runInitialPlacement() {
   }
 }
 
-void BlackboxOptimizer::report() const {
-  if (solutions_.empty()) {
-    cout << "No solution in the pool" << endl;
-    return;
+void BlackboxOptimizer::report(const string &step) const {
+  report(step, solutions_.size());
+}
+
+void BlackboxOptimizer::report(const string &step, Index nSols) const {
+  if (params_.verbosity >= 3) {
+    for (int i = 0; i < level_; ++i) cout << "  ";
+    cout << step << ": ";
+    cout << hypergraph_.nNodes() << " nodes, ";
+    cout << hypergraph_.nHedges() << " edges, ";
+    cout << hypergraph_.nPins() << " pins ";
+    cout << "on " << nSols << " solutions";
+    cout << endl;
   }
-  Solution solution = bestSolution();
-  localSearch_.report(hypergraph_, solution, cout);
-  cout << endl;
 }
 
 Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const PartitioningParams &params, const LocalSearch &localSearch) {
@@ -53,12 +59,16 @@ Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const Partitioning
 
 Solution BlackboxOptimizer::run() {
   runInitialPlacement();
+  runLocalSearch();
   for (int i = 0; i < params_.nCycles; ++i) {
     if (params_.verbosity >= 2)
       cout << "Starting V-cycle #" << i + 1 << endl;
     runVCycle();
-    if (params_.verbosity >= 2)
-      report();
+    if (params_.verbosity >= 2) {
+      Solution solution = bestSolution();
+      localSearch_.report(hypergraph_, solution, cout);
+      cout << endl;
+    }
   }
   if (params_.verbosity >= 2)
     cout << endl;
@@ -135,47 +145,70 @@ Solution BlackboxOptimizer::computeCoarsening(const vector<Solution> &solutions)
   return Solution(coarsening);
 }
 
-void BlackboxOptimizer::runVCycle() {
-  if (params_.verbosity >= 3) {
-    for (int i = 0; i <= level_; ++i) cout << "  ";
-    cout << "V-cycle step with " << hypergraph_.nNodes() << " nodes on " << solutions_.size() << " solutions" << endl;
+namespace {
+
+class CoarseningComparer {
+ public:
+  CoarseningComparer(const PartitioningParams &params)
+  : params_(params) {
   }
 
+  bool operator()(const Solution &c1, const Solution &c2) const {
+    assert (c1.nNodes() == c2.nNodes());
+    Index nNodes = c1.nNodes();
+    double fac1 = nNodes / (double) c1.nParts();
+    double fac2 = nNodes / (double) c2.nParts();
+    if (fac1 < params_.minCoarseningFactor || fac2 < params_.minCoarseningFactor)
+      return fac1 > fac2;
+    if (fac1 > params_.maxCoarseningFactor || fac2 < params_.maxCoarseningFactor)
+      return fac1 < fac2;
+    double tgt = 0.5 * (params_.maxCoarseningFactor + params_.minCoarseningFactor);
+    return abs(fac1 - tgt) < abs(fac2 - tgt);
+  }
+
+ private:
+  const PartitioningParams &params_;
+};
+} // End anonymous namespace
+
+void BlackboxOptimizer::runLocalSearch() {
+  report ("Local search");
+  for (Solution &solution : solutions_) {
+    localSearch_.run(hypergraph_, solution, params_, rgen_);
+  }
+}
+
+void BlackboxOptimizer::runVCycle() {
+  if (hypergraph_.nNodes() < params_.minCoarseningNodes * hypergraph_.nParts()) return;
+  report ("V-cycle step");
+
+  // Pick the best number of solutions for the coarsening
+  // If the coarsening is still too large, stop the recursion
   shuffle(solutions_.begin(), solutions_.end(), rgen_);
 
-  // Run local search on the initial solutions and add them to the pool until either:
-  //    * the new coarsening is large enough: go to the next level
-  //    * we used all solutions in the pool: go to the next level
-  //    * the coarsening is too large: stop the recursion
+  vector<Solution> coarsenings;
   for (size_t nSols = 1; nSols <= solutions_.size(); ++nSols) {
-    localSearch_.run(hypergraph_, solutions_[nSols-1], params_, rgen_);
-    Solution coarsening = computeCoarsening(vector<Solution>(solutions_.begin(), solutions_.begin() + nSols));
-    if (coarsening.nParts() > hypergraph_.nNodes() / params_.minCoarseningFactor) {
-      // No success in coarsening anymore; time to stop the cycle
-      return;
-    }
-    if (nSols == solutions_.size() || coarsening.nParts() > hypergraph_.nNodes() / params_.maxCoarseningFactor) {
-      // New coarsening large enough: apply and recurse
-      Hypergraph cHypergraph = hypergraph_.coarsen(coarsening);
-      vector<Solution> cSolutions;
-      for (size_t i = 0; i < nSols; ++i) {
-        cSolutions.emplace_back(solutions_[i].coarsen(coarsening));
-      }
-      BlackboxOptimizer nextLevel(cHypergraph, params_, localSearch_, rgen_, cSolutions, level_+1);
-      nextLevel.runVCycle();
-      for (size_t i = 0; i < nSols; ++i) {
-        solutions_[i] = cSolutions[i].uncoarsen(coarsening);
-        localSearch_.run(hypergraph_, solutions_[i], params_, rgen_);
-      }
-      break;
-    }
+    coarsenings.emplace_back(computeCoarsening(vector<Solution>(solutions_.begin(), solutions_.begin() + nSols)));
+  }
+  size_t coarseningIndex  = min_element(coarsenings.begin(), coarsenings.end(), CoarseningComparer(params_)) - coarsenings.begin();
+  Solution coarsening = coarsenings[coarseningIndex];
+  if (coarsening.nNodes() / (double) coarsening.nParts() < params_.minCoarseningFactor) return;
+
+  Hypergraph cHypergraph = hypergraph_.coarsen(coarsening);
+  vector<Solution> cSolutions;
+  for (size_t i = 0; i <= coarseningIndex; ++i) {
+    cSolutions.emplace_back(solutions_[i].coarsen(coarsening));
+  }
+  BlackboxOptimizer nextLevel(cHypergraph, params_, localSearch_, rgen_, cSolutions, level_+1);
+  nextLevel.runLocalSearch();
+  nextLevel.runVCycle();
+  report("Refinement", coarseningIndex + 1);
+  for (size_t i = 0; i <= coarseningIndex; ++i) {
+    solutions_[i] = cSolutions[i].uncoarsen(coarsening);
+    localSearch_.run(hypergraph_, solutions_[i], params_, rgen_);
   }
 
   checkConsistency();
-  if (params_.verbosity >= 3) {
-    for (int i = 0; i <= level_; ++i) cout << "  ";
-    cout << "V-cycle step done" << endl;
-  }
 }
 
 void BlackboxOptimizer::checkConsistency() const {
