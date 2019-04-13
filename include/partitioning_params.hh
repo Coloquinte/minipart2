@@ -37,6 +37,7 @@ struct PartitioningParams {
   Index nNodes;
   Index nHedges;
   Index nPins;
+  Index nParts;
 };
 
 } // End namespace minipart

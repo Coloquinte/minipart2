@@ -179,6 +179,8 @@ void BlackboxOptimizer::runLocalSearch() {
 }
 
 void BlackboxOptimizer::runVCycle() {
+  checkConsistency();
+
   if (hypergraph_.nNodes() < params_.minCoarseningNodes * hypergraph_.nParts()) return;
   report ("V-cycle step");
 
@@ -207,7 +209,6 @@ void BlackboxOptimizer::runVCycle() {
     solutions_[i] = cSolutions[i].uncoarsen(coarsening);
     localSearch_.run(hypergraph_, solutions_[i], params_, rgen_);
   }
-
   checkConsistency();
 }
 

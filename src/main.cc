@@ -125,16 +125,20 @@ PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg)
     .movesPerElement = vm["move-ratio"].as<double>(),
     .nNodes = hg.nNodes(),
     .nHedges = hg.nHedges(),
-    .nPins = hg.nPins()
+    .nPins = hg.nPins(),
+    .nParts = hg.nParts()
   };
 }
 
-void report(const Hypergraph &hg, const Solution &sol) {
+void report(const Hypergraph &hg) {
   cout << "Nodes: " << hg.nNodes() << endl;
   cout << "Edges: " << hg.nHedges() << endl;
   cout << "Pins: " << hg.nPins() << endl;
+  cout << "Parts: " << hg.nParts() << endl;
   cout << endl;
+}
 
+void report(const Hypergraph &hg, const Solution &sol) {
   cout << "Cut: " << hg.metricsCut(sol) << endl;
   cout << "Connectivity: " << hg.metricsConnectivity(sol) << endl;
   cout << endl;
@@ -180,8 +184,14 @@ int main(int argc, char **argv) {
   PartitioningParams params = readParams(vm, hg);
   unique_ptr<LocalSearch> localSearchPtr = readLocalSearch(vm);
 
+  if (params.verbosity >= 1) {
+    report(hg);
+  }
   Solution sol = BlackboxOptimizer::run(hg, params, *localSearchPtr);
 
+  if (params.verbosity >= 2) {
+    report(hg);
+  }
   if (params.verbosity >= 1) {
     report(hg, sol);
   }

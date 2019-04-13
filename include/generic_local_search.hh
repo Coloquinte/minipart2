@@ -106,10 +106,10 @@ inline std::size_t GenericLocalSearch<TObjectiveType>::Runner::totalBudget() con
 template<typename TObjectiveType>
 inline void GenericLocalSearch<TObjectiveType>::Runner::init() {
   moves_.clear();
-  std::size_t nMoves = params_.movesPerElement * (std::size_t) inc_.nNodes() * (std::size_t) (inc_.nParts()-1);
-  moves_.emplace_back(std::make_unique<SimpleMove>(nMoves));
-  moves_.emplace_back(std::make_unique<SimpleSwap>(nMoves));
-  moves_.emplace_back(std::make_unique<AbsorptionMove>(nMoves));
+  double targetCount = params_.movesPerElement * params_.nNodes * (params_.nParts - 1);
+  moves_.emplace_back(std::make_unique<SimpleMove>(0.8 * targetCount));
+  moves_.emplace_back(std::make_unique<SimpleSwap>(0.1 * targetCount));
+  moves_.emplace_back(std::make_unique<AbsorptionMove>(0.1 * targetCount));
 }
 
 template<typename TObjectiveType>
