@@ -140,7 +140,10 @@ void report(const Hypergraph &hg) {
 
 void report(const Hypergraph &hg, const Solution &sol) {
   cout << "Cut: " << hg.metricsCut(sol) << endl;
-  cout << "Connectivity: " << hg.metricsConnectivity(sol) << endl;
+  if (hg.nParts() > 2) {
+    cout << "Connectivity: " << hg.metricsConnectivity(sol) << endl;
+    cout << "Maximum degree: " << hg.metricsMaxDegree(sol) << endl;
+  }
   cout << endl;
 
   std::vector<Index> usage  = hg.metricsPartitionUsage(sol);
