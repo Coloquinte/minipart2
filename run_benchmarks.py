@@ -15,11 +15,12 @@ def create_db():
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS minipart 
-        (bench text, version text, partitions integer, imbalance real, objective text,
-        v_cycles integer, pool_size integer, move_ratio real, seed integer,
-        cut integer, connectivity integer, max_degree integer,
-        UNIQUE (bench, version, partitions, objective, imbalance, v_cycles, pool_size, move_ratio, seed)
-        )''')
+            (bench text, version text, partitions integer, imbalance real, objective text,
+              v_cycles integer, pool_size integer, move_ratio real, seed integer,
+              cut integer, connectivity integer, max_degree integer,
+              UNIQUE (bench, version, partitions, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
+            )
+        ''')
     conn.commit()
     c.close()
 
@@ -27,10 +28,10 @@ def list_benchs():
     return [ "ibm%02d" % (i,) for i in range(1,19)]
 
 def list_partitions():
-    return [2, 3, 4]
+    return [2, 3]
 
 def list_imbalance():
-    return [1, 2, 5]
+    return [5]
 
 def list_objective(nb_partitions):
     if nb_partitions > 2:
@@ -39,16 +40,16 @@ def list_objective(nb_partitions):
         return ["cut"]
 
 def list_v_cycles():
-    return [2, 4, 8]
+    return [8]
 
 def list_pool_size():
-    return [32, 48, 64]
+    return [32]
 
 def list_move_ratio():
-    return [2, 4, 8]
+    return [8]
 
 def list_seeds():
-    return [1]
+    return [1,2,3,4,5,6]
 
 def list_params():
     params = []
@@ -64,6 +65,20 @@ def list_params():
                     cur = MinipartParams(bench, version, partitions, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
                     params.append(cur)
     return params
+
+def filter_new_params(params):
+    conn = sqlite3.connect("results.db")
+    c = conn.cursor()
+    new_params = []
+    for p in params:
+      c.execute('''SELECT * FROM minipart
+        WHERE bench=? and version=? and partitions=? and imbalance=?
+        and objective=? and v_cycles=? and pool_size=?
+        and move_ratio=? and seed=?''', p)
+      res = c.fetchall()
+      if len(res) == 0:
+        new_params.append(p)
+    return new_params
 
 def extract_metrics(output):
     o = output.decode("utf-8")
@@ -112,6 +127,7 @@ def save_results(params, results):
 def run_benchmarks():
     create_db()
     params = list_params()
+    params = filter_new_params(params)
     pool = multiprocessing.Pool(8)
     pool.map(run_benchmark, params)
 
