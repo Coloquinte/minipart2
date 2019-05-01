@@ -69,8 +69,8 @@ po::options_description getBlackboxOptions() {
 }
 
 po::variables_map parseArguments(int argc, char **argv) {
-  cout << fixed << setprecision(2);
-  cerr << fixed << setprecision(2);
+  cout << fixed << setprecision(1);
+  cerr << fixed << setprecision(1);
 
   po::options_description baseOptions = getBaseOptions();
   po::options_description blackboxOptions = getBlackboxOptions();
@@ -151,6 +151,7 @@ void report(const Hypergraph &hg, const Solution &sol) {
   for (Index p = 0; p < hg.nParts(); ++p) {
     cout << "\tPart#" << p << "  \t";
     cout << usage[p] << "\t/ " << hg.partWeight(p) << "\t";
+    cout << "(" << 100.0 * usage[p] / hg.partWeight(p) << "%)\t";
     if (usage[p] > hg.partWeight(p)) cout << "(overflow)";
     cout << endl;
   }

@@ -26,7 +26,7 @@ class GenericLocalSearch : public LocalSearch {
     virtual void run(IncrementalSolution &inc, std::mt19937 &rgen) =0;
     virtual ~Move() {}
 
-    std::uint64_t budget_;
+    std::int64_t budget_;
   };
 
   class Runner {
@@ -50,6 +50,15 @@ class GenericLocalSearch : public LocalSearch {
    public:
     SimpleMove(Index budget) : Move(budget) {}
     void run(IncrementalSolution &inc, std::mt19937 &rgen) override;
+  };
+
+  class EdgeMove : public Move {
+   public:
+    EdgeMove(Index budget) : Move(budget) {}
+    void run(IncrementalSolution &inc, std::mt19937 &rgen) override;
+
+   private:
+    std::vector<std::pair<Index, Index> > initialStatus_;
   };
 
   class SimpleSwap : public Move {
@@ -98,7 +107,7 @@ template<typename TObjectiveType>
 inline std::size_t GenericLocalSearch<TObjectiveType>::Runner::totalBudget() const {
   std::size_t ret = 0;
   for (const std::unique_ptr<Move> &mv : moves_) {
-    ret += mv->budget_;
+    if (mv->budget_ > 0) ret += mv->budget_;
   }
   return ret;
 }
@@ -107,8 +116,9 @@ template<typename TObjectiveType>
 inline void GenericLocalSearch<TObjectiveType>::Runner::init() {
   moves_.clear();
   double targetCount = params_.movesPerElement * params_.nNodes * (params_.nParts - 1);
-  moves_.emplace_back(std::make_unique<SimpleMove>(0.8 * targetCount));
+  moves_.emplace_back(std::make_unique<SimpleMove>(0.6 * targetCount));
   moves_.emplace_back(std::make_unique<SimpleSwap>(0.1 * targetCount));
+  moves_.emplace_back(std::make_unique<EdgeMove>(0.2 * targetCount));
   moves_.emplace_back(std::make_unique<AbsorptionMove>(0.1 * targetCount));
 }
 
@@ -119,7 +129,7 @@ inline void GenericLocalSearch<TObjectiveType>::Runner::doMove() {
   std::size_t roll = dist(rgen_);
   std::size_t tot = 0;
   for (std::unique_ptr<Move> &mv : moves_) {
-    tot += mv->budget_;
+    if (mv->budget_ > 0) tot += mv->budget_;
     if (tot > roll) {
       mv->run(inc_, rgen_);
       return;
@@ -165,6 +175,35 @@ inline void GenericLocalSearch<TObjectiveType>::SimpleSwap::run(IncrementalSolut
     inc.move(n1, p1);
     inc.move(n2, p2);
   }
+}
+
+template<typename TObjectiveType>
+inline void GenericLocalSearch<TObjectiveType>::EdgeMove::run(IncrementalSolution &inc, std::mt19937 &rgen) {
+  assert (this->budget_ > 0);
+  initialStatus_.clear();
+
+  std::uniform_int_distribution<Index> edgeDist(0, inc.nHedges()-1);
+  std::uniform_int_distribution<Index> partDist(0, inc.nParts()-1);
+  Index hedge = edgeDist(rgen);
+  Index dst = partDist(rgen);
+  if (inc.hypergraph().hedgeNodes(hedge).size() > 10) {
+    --this->budget_;
+    return;
+  }
+
+  TObjectiveType before(inc);
+  for (Index node : inc.hypergraph().hedgeNodes(hedge)) {
+    Index src = inc.solution(node);
+    inc.move(node, dst);
+    initialStatus_.emplace_back(node, src);
+  }
+  TObjectiveType after(inc);
+  if (before < after) {
+    for (std::pair<Index, Index> status : initialStatus_) {
+      inc.move(status.first, status.second);
+    }
+  }
+  this->budget_ -= inc.hypergraph().hedgeNodes(hedge).size();
 }
 
 template<typename TObjectiveType>

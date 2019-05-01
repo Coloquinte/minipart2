@@ -46,7 +46,7 @@ def list_pool_size():
     return [32]
 
 def list_move_ratio():
-    return [8]
+    return [16]
 
 def list_seeds():
     return [1,2,3,4,5,6]
@@ -104,7 +104,7 @@ def extract_metrics(output):
     return MinipartResults(cut, connectivity, max_degree)
 
 def run_benchmark(params):
-    output = subprocess.check_output(["build/minipart",
+    output = subprocess.check_output(["./minipart_bench",
         "--input", "data/" + params.bench + ".hgr", "--partitions", str(params.partitions),
         "--imbalance", str(params.imbalance), "--objective", params.objective,
         "--v-cycles", str(params.v_cycles), "--pool-size", str(params.pool_size), "--move-ratio", str(params.move_ratio),
