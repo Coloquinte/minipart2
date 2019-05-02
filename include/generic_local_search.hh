@@ -54,11 +54,14 @@ class GenericLocalSearch : public LocalSearch {
 
   class EdgeMove : public Move {
    public:
-    EdgeMove(Index budget) : Move(budget) {}
+    EdgeMove(Index budget) : Move(budget) {
+      edgeDegreeCutoff_ = 10;
+    }
     void run(IncrementalSolution &inc, std::mt19937 &rgen) override;
 
    private:
     std::vector<std::pair<Index, Index> > initialStatus_;
+    std::size_t edgeDegreeCutoff_;
   };
 
   class SimpleSwap : public Move {
@@ -69,11 +72,16 @@ class GenericLocalSearch : public LocalSearch {
 
   class AbsorptionMove : public Move {
    public:
-    AbsorptionMove(Index budget) : Move(budget) {}
+    AbsorptionMove(Index budget) : Move(budget) {
+      nodeDegreeCutoff_ = 10;
+      edgeDegreeCutoff_ = 10;
+    }
     void run(IncrementalSolution &inc, std::mt19937 &rgen) override;
 
    private:
     std::vector<Index> candidates_;
+    std::size_t nodeDegreeCutoff_;
+    std::size_t edgeDegreeCutoff_;
   };
 };
 
@@ -116,10 +124,10 @@ template<typename TObjectiveType>
 inline void GenericLocalSearch<TObjectiveType>::Runner::init() {
   moves_.clear();
   double targetCount = params_.movesPerElement * params_.nNodes * (params_.nParts - 1);
-  moves_.emplace_back(std::make_unique<SimpleMove>(0.6 * targetCount));
+  moves_.emplace_back(std::make_unique<SimpleMove>(0.1 * targetCount));
   moves_.emplace_back(std::make_unique<SimpleSwap>(0.1 * targetCount));
-  moves_.emplace_back(std::make_unique<EdgeMove>(0.2 * targetCount));
-  moves_.emplace_back(std::make_unique<AbsorptionMove>(0.1 * targetCount));
+  moves_.emplace_back(std::make_unique<EdgeMove>(0.1 * targetCount));
+  moves_.emplace_back(std::make_unique<AbsorptionMove>(0.7 * targetCount));
 }
 
 template<typename TObjectiveType>
@@ -186,7 +194,7 @@ inline void GenericLocalSearch<TObjectiveType>::EdgeMove::run(IncrementalSolutio
   std::uniform_int_distribution<Index> partDist(0, inc.nParts()-1);
   Index hedge = edgeDist(rgen);
   Index dst = partDist(rgen);
-  if (inc.hypergraph().hedgeNodes(hedge).size() > 10) {
+  if (inc.hypergraph().hedgeNodes(hedge).size() > edgeDegreeCutoff_) {
     --this->budget_;
     return;
   }
@@ -230,10 +238,13 @@ inline void GenericLocalSearch<TObjectiveType>::AbsorptionMove::run(IncrementalS
       inc.move(node, src);
     }
     else {
-      for (Index hEdge : inc.hypergraph().nodeHedges(node)) {
-        // TODO: try better rules that do not involve all pins or all partitions if possible
-        for (Index neighbour : inc.hypergraph().hedgeNodes(hEdge)) {
-          candidates_.push_back(neighbour);
+      if (inc.hypergraph().nodeHedges(node).size() <= nodeDegreeCutoff_) {
+        for (Index hEdge : inc.hypergraph().nodeHedges(node)) {
+          if (inc.hypergraph().hedgeNodes(hEdge).size() <= edgeDegreeCutoff_) {
+            for (Index neighbour : inc.hypergraph().hedgeNodes(hEdge)) {
+              candidates_.push_back(neighbour);
+            }
+          }
         }
       }
     }

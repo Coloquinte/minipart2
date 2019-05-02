@@ -46,14 +46,14 @@ def list_pool_size():
     return [32]
 
 def list_move_ratio():
-    return [16]
+    return [8]
 
 def list_seeds():
     return [1,2,3,4,5,6]
 
 def list_params():
     params = []
-    version = "2019-04-14"
+    version = "2019-05-01"
     for bench in list_benchs():
       for partitions in list_partitions():
         for imbalance in list_imbalance():
