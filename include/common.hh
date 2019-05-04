@@ -11,6 +11,8 @@ typedef std::int32_t Index;
 class Hypergraph;
 class Solution;
 class PartitioningParams;
+class Objective;
+class IncrementalObjective;
 } // End namespace minipart
 
 #endif

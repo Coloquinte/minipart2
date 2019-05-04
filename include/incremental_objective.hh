@@ -5,8 +5,6 @@
 
 #include "hypergraph.hh"
 
-#include <memory>
-
 namespace minipart {
 
 /**
@@ -28,9 +26,7 @@ class IncrementalObjective {
   const Solution& solution() const { return solution_; }
   const std::vector<std::int64_t>& objectives() const { return objectives_; }
 
-  static std::unique_ptr<IncrementalObjective> cut(const Hypergraph&, Solution&);
-  static std::unique_ptr<IncrementalObjective> soed(const Hypergraph&, Solution&);
-  static std::unique_ptr<IncrementalObjective> maxDegree(const Hypergraph&, Solution&);
+  virtual ~IncrementalObjective() {}
 
  protected:
   const Hypergraph &hypergraph_;

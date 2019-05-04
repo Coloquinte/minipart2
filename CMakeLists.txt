@@ -17,6 +17,7 @@ SET (SOURCES
   src/objective_function.cc
   src/partitioning_params.cc
   src/incremental_objective.cc
+  src/objective.cc
   src/io.cc
 )
 

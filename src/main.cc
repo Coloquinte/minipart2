@@ -4,6 +4,7 @@
 #include "partitioning_params.hh"
 #include "blackbox_optimizer.hh"
 #include "local_search.hh"
+#include "objective.hh"
 
 #include <iostream>
 #include <iomanip>
@@ -180,6 +181,18 @@ unique_ptr<LocalSearch> readLocalSearch(const po::variables_map &vm) {
   }
 }
 
+unique_ptr<Objective> readObjective(const po::variables_map &vm) {
+  switch (vm["objective"].as<ObjectiveType>()) {
+    case ObjectiveType::Cut:
+      return make_unique<CutObjective>();
+    case ObjectiveType::Soed:
+      return make_unique<SoedObjective>();
+    case ObjectiveType::MaxDegree:
+      return make_unique<MaxDegreeObjective>();
+    default:
+      return make_unique<SoedObjective>();
+  }
+}
 
 int main(int argc, char **argv) {
   po::variables_map vm = parseArguments(argc, argv);
@@ -187,6 +200,7 @@ int main(int argc, char **argv) {
   Hypergraph hg = readHypergraph(vm);
   PartitioningParams params = readParams(vm, hg);
   unique_ptr<LocalSearch> localSearchPtr = readLocalSearch(vm);
+  unique_ptr<Objective> objectivePtr = readObjective(vm);
 
   if (params.verbosity >= 1) {
     report(hg);

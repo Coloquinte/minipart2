@@ -86,7 +86,6 @@ Index computeMaxDegree(const Hypergraph &, const vector<Index> &partitionDegrees
 }
 }
 
-
 IncrementalObjective::IncrementalObjective(const Hypergraph &hypergraph, Solution &solution, Index nObjectives)
 : hypergraph_(hypergraph)
 , solution_(solution)
@@ -122,6 +121,15 @@ IncrementalMaxDegree::IncrementalMaxDegree(const Hypergraph &hypergraph, Solutio
   hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
   partitionDegrees_ = computePartitionDegrees(hypergraph, hedgeDegrees_, hedgeNbPinsPerPartition_);
   currentSoed_ = computeSoed(hypergraph, hedgeDegrees_);
+}
+
+void IncrementalCut::checkConsistency() const {
+}
+
+void IncrementalSoed::checkConsistency() const {
+}
+
+void IncrementalMaxDegree::checkConsistency() const {
 }
 
 void IncrementalCut::move(Index node, Index to) {
@@ -230,18 +238,6 @@ void IncrementalMaxDegree::move(Index node, Index to) {
   objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
   objectives_[1] = computeMaxDegree(hypergraph_, partitionDegrees_);
   objectives_[2] = currentSoed_;
-}
-
-unique_ptr<IncrementalObjective> IncrementalObjective::cut(const Hypergraph &h, Solution &s) {
-  return make_unique<IncrementalCut>(h, s);
-}
-
-unique_ptr<IncrementalObjective> IncrementalObjective::soed(const Hypergraph &h, Solution &s) {
-  return make_unique<IncrementalSoed>(h, s);
-}
-
-unique_ptr<IncrementalObjective> IncrementalObjective::maxDegree(const Hypergraph &h, Solution &s) {
-  return make_unique<IncrementalMaxDegree>(h, s);
 }
 
 } // End namespace minipart
