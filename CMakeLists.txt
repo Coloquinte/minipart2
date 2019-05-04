@@ -16,6 +16,7 @@ SET (SOURCES
   src/local_search.cc
   src/objective_function.cc
   src/partitioning_params.cc
+  src/incremental_objective.cc
   src/io.cc
 )
 
