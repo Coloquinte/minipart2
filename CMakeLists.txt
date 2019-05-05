@@ -11,15 +11,12 @@ INCLUDE_DIRECTORIES(${MINIPART_SOURCE_DIR}/include)
 SET (SOURCES
   src/hypergraph.cc
   src/solution.cc
-  src/incremental_solution.cc
-  src/blackbox_optimizer.cc
-  src/local_search.cc
-  src/objective_function.cc
   src/partitioning_params.cc
   src/incremental_objective.cc
   src/objective.cc
   src/move.cc
   src/local_search_optimizer.cc
+  src/blackbox_optimizer.cc
   src/io.cc
 )
 

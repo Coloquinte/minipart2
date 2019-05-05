@@ -3,7 +3,6 @@
 #include "hypergraph.hh"
 #include "partitioning_params.hh"
 #include "blackbox_optimizer.hh"
-#include "local_search.hh"
 #include "objective.hh"
 
 #include <iostream>
@@ -165,19 +164,6 @@ void report(const Hypergraph &hg, const Solution &sol) {
   for (Index p = 0; p < hg.nParts(); ++p) {
     cout << "\tPart#" << p << "  \t";
     cout << degree[p] << endl;
-  }
-}
-
-unique_ptr<LocalSearch> readLocalSearch(const po::variables_map &vm) {
-  switch (vm["objective"].as<ObjectiveType>()) {
-    case ObjectiveType::Cut:
-      return LocalSearch::cut();
-    case ObjectiveType::Soed:
-      return LocalSearch::soed();
-    case ObjectiveType::MaxDegree:
-      return LocalSearch::maxDegree();
-    default:
-      return LocalSearch::soed();
   }
 }
 

@@ -2,8 +2,7 @@
 #ifndef MINIPART_BLACKBOX_OPTIMIZER_HH
 #define MINIPART_BLACKBOX_OPTIMIZER_HH
 
-#include "hypergraph.hh"
-#include "local_search.hh"
+#include "common.hh"
 
 #include <random>
 #include <string>

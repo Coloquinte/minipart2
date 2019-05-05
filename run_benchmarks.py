@@ -53,7 +53,7 @@ def list_seeds():
 
 def list_params():
     params = []
-    version = "2019-05-01"
+    version = "2019-05-05"
     for bench in list_benchs():
       for partitions in list_partitions():
         for imbalance in list_imbalance():
