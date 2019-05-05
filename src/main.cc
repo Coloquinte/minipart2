@@ -30,7 +30,7 @@ po::options_description getBaseOptions() {
   desc.add_options()("imbalance,e", po::value<double>()->default_value(5.0),
                      "Imbalance factor (%)");
 
-  desc.add_options()("objective", po::value<ObjectiveType>()->default_value(ObjectiveType::Soed),
+  desc.add_options()("objective,g", po::value<ObjectiveType>()->default_value(ObjectiveType::Soed),
                      "Objective function: cut, soed or max-degree");
 
   desc.add_options()("verbosity,v", po::value<Index>()->default_value(1),
