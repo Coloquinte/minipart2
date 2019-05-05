@@ -124,12 +124,26 @@ IncrementalMaxDegree::IncrementalMaxDegree(const Hypergraph &hypergraph, Solutio
 }
 
 void IncrementalCut::checkConsistency() const {
+  assert (partitionDemands_ == computePartitionDemands(hypergraph_, solution_));
+  assert (hedgeNbPinsPerPartition_ == computeHedgeNbPinsPerPartition(hypergraph_, solution_));
+  assert (hedgeDegrees_ == computeHedgeDegrees(hypergraph_, hedgeNbPinsPerPartition_));
+  assert (currentCut_ == computeCut(hypergraph_, hedgeDegrees_));
+  assert (currentSoed_ == computeSoed(hypergraph_, hedgeDegrees_));
 }
 
 void IncrementalSoed::checkConsistency() const {
+  assert (partitionDemands_ == computePartitionDemands(hypergraph_, solution_));
+  assert (hedgeNbPinsPerPartition_ == computeHedgeNbPinsPerPartition(hypergraph_, solution_));
+  assert (hedgeDegrees_ == computeHedgeDegrees(hypergraph_, hedgeNbPinsPerPartition_));
+  assert (currentSoed_ == computeSoed(hypergraph_, hedgeDegrees_));
 }
 
 void IncrementalMaxDegree::checkConsistency() const {
+  assert (partitionDemands_ == computePartitionDemands(hypergraph_, solution_));
+  assert (hedgeNbPinsPerPartition_ == computeHedgeNbPinsPerPartition(hypergraph_, solution_));
+  assert (hedgeDegrees_ == computeHedgeDegrees(hypergraph_, hedgeNbPinsPerPartition_));
+  assert (partitionDegrees_ == computePartitionDegrees(hypergraph_, hedgeDegrees_, hedgeNbPinsPerPartition_));
+  assert (currentSoed_ == computeSoed(hypergraph_, hedgeDegrees_));
 }
 
 void IncrementalCut::move(Index node, Index to) {

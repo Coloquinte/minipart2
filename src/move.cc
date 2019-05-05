@@ -1,5 +1,6 @@
 
 #include "move.hh"
+#include "incremental_objective.hh"
 
 #include <cassert>
 

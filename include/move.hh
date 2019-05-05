@@ -2,7 +2,7 @@
 #ifndef MINIPART_MOVE_HH
 #define MINIPART_MOVE_HH
 
-#include "incremental_objective.hh"
+#include "common.hh"
 
 #include <random>
 

@@ -199,13 +199,12 @@ int main(int argc, char **argv) {
 
   Hypergraph hg = readHypergraph(vm);
   PartitioningParams params = readParams(vm, hg);
-  unique_ptr<LocalSearch> localSearchPtr = readLocalSearch(vm);
   unique_ptr<Objective> objectivePtr = readObjective(vm);
 
   if (params.verbosity >= 1) {
     report(hg);
   }
-  Solution sol = BlackboxOptimizer::run(hg, params, *localSearchPtr);
+  Solution sol = BlackboxOptimizer::run(hg, params, *objectivePtr);
 
   if (params.verbosity >= 2) {
     report(hg);

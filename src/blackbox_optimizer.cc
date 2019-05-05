@@ -1,8 +1,10 @@
 // Copyright (C) 2019 Gabriel Gouvine - All Rights Reserved
 
 #include "blackbox_optimizer.hh"
-#include "objective_function.hh"
+#include "objective.hh"
+#include "incremental_objective.hh"
 #include "partitioning_params.hh"
+#include "local_search_optimizer.hh"
 
 #include <iostream>
 #include <unordered_map>
@@ -13,10 +15,10 @@
 using namespace std;
 
 namespace minipart {
-BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const PartitioningParams &params, const LocalSearch &localSearch, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level)
+BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const PartitioningParams &params, const Objective &objective, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level)
 : hypergraph_(hypergraph)
 , params_(params)
-, localSearch_(localSearch)
+, objective_(objective)
 , rgen_(rgen)
 , solutions_(solutions)
 , level_(level) {
@@ -50,28 +52,51 @@ void BlackboxOptimizer::report(const string &step, Index nSols) const {
   }
 }
 
-Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const PartitioningParams &params, const LocalSearch &localSearch) {
+void BlackboxOptimizer::reportStartCycle() const {
+  if (params_.verbosity >= 2) {
+    cout << "Starting V-cycle #" << cycle_ + 1 << endl;
+  }
+}
+
+void BlackboxOptimizer::reportEndCycle() const {
+  if (params_.verbosity >= 2) {
+    Solution solution = bestSolution();
+    vector<int64_t> obj = objective_.eval(hypergraph_, solution);
+    cout << "Objectives: ";
+    for (size_t i = 0; i < obj.size(); ++i) {
+      if (i > 0) cout << ", ";
+      cout << obj[i];
+    }
+    cout << endl;
+  }
+}
+
+void BlackboxOptimizer::reportStartSearch() const {
+}
+
+void BlackboxOptimizer::reportEndSearch() const {
+  if (params_.verbosity >= 2) {
+    cout << endl;
+  }
+}
+
+Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const PartitioningParams &params, const Objective &objective) {
   mt19937 rgen(params.seed);
   vector<Solution> sols;
-  BlackboxOptimizer opt(hypergraph, params, localSearch, rgen, sols, 0);
+  BlackboxOptimizer opt(hypergraph, params, objective, rgen, sols, 0);
   return opt.run();
 }
 
 Solution BlackboxOptimizer::run() {
+  reportStartSearch();
   runInitialPlacement();
   runLocalSearch();
-  for (int i = 0; i < params_.nCycles; ++i) {
-    if (params_.verbosity >= 2)
-      cout << "Starting V-cycle #" << i + 1 << endl;
+  for (cycle_ = 0; cycle_ < params_.nCycles; ++cycle_) {
+    reportStartCycle();
     runVCycle();
-    if (params_.verbosity >= 2) {
-      Solution solution = bestSolution();
-      localSearch_.report(hypergraph_, solution, cout);
-      cout << endl;
-    }
+    reportEndCycle();
   }
-  if (params_.verbosity >= 2)
-    cout << endl;
+  reportEndSearch();
 
   return bestSolution();
 }
@@ -80,7 +105,7 @@ Solution BlackboxOptimizer::bestSolution() const {
   assert (!solutions_.empty());
   size_t best = 0;
   for (size_t i = 1; i < solutions_.size(); ++i) {
-    if (localSearch_.compare(hypergraph_, solutions_[i], solutions_[best])) {
+    if (objective_.eval(hypergraph_, solutions_[i]) < objective_.eval(hypergraph_, solutions_[best])) {
       best = i;
     }
   }
@@ -174,7 +199,9 @@ class CoarseningComparer {
 void BlackboxOptimizer::runLocalSearch() {
   report ("Local search");
   for (Solution &solution : solutions_) {
-    localSearch_.run(hypergraph_, solution, params_, rgen_);
+    unique_ptr<IncrementalObjective> inc = objective_.incremental(hypergraph_, solution);
+    LocalSearchOptimizer(*inc, params_, rgen_).run();
+    inc->checkConsistency();
   }
 }
 
@@ -201,13 +228,15 @@ void BlackboxOptimizer::runVCycle() {
   for (size_t i = 0; i <= coarseningIndex; ++i) {
     cSolutions.emplace_back(solutions_[i].coarsen(coarsening));
   }
-  BlackboxOptimizer nextLevel(cHypergraph, params_, localSearch_, rgen_, cSolutions, level_+1);
+  BlackboxOptimizer nextLevel(cHypergraph, params_, objective_, rgen_, cSolutions, level_+1);
   nextLevel.runLocalSearch();
   nextLevel.runVCycle();
   report("Refinement", coarseningIndex + 1);
   for (size_t i = 0; i <= coarseningIndex; ++i) {
     solutions_[i] = cSolutions[i].uncoarsen(coarsening);
-    localSearch_.run(hypergraph_, solutions_[i], params_, rgen_);
+    unique_ptr<IncrementalObjective> inc = objective_.incremental(hypergraph_, solutions_[i]);
+    LocalSearchOptimizer(*inc, params_, rgen_).run();
+    inc->checkConsistency();
   }
   checkConsistency();
 }

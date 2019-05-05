@@ -4,7 +4,7 @@
 
 #include "hypergraph.hh"
 #include "incremental_objective.hh"
-#include "partitioning_params.hh"
+#include "move.hh"
 
 #include <random>
 #include <iosfwd>
@@ -19,7 +19,7 @@ class LocalSearchOptimizer {
  public:
   LocalSearchOptimizer(IncrementalObjective &inc, const PartitioningParams &params, std::mt19937 &rgen);
   void run();
- 
+
  private:
   void init();
   void doMove();
