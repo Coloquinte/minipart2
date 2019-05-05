@@ -18,6 +18,8 @@ SET (SOURCES
   src/partitioning_params.cc
   src/incremental_objective.cc
   src/objective.cc
+  src/move.cc
+  src/local_search_optimizer.cc
   src/io.cc
 )
 
