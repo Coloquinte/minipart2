@@ -11,7 +11,9 @@ namespace minipart {
 enum class ObjectiveType {
   Cut,
   Soed,
-  MaxDegree
+  MaxDegree,
+  DaisyChainDistance,
+  DaisyChainMaxDegree
 };
 
 std::istream & operator>>(std::istream &, ObjectiveType &);
@@ -20,6 +22,7 @@ std::ostream & operator<<(std::ostream &, const ObjectiveType &);
 struct PartitioningParams {
   int verbosity;
   std::size_t seed;
+  ObjectiveType objective;
 
   // V-cycling and solution pool
   int nSolutions;

@@ -117,6 +117,7 @@ PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg)
   return PartitioningParams {
     .verbosity = vm["verbosity"].as<Index>(),
     .seed = vm["seed"].as<size_t>(),
+    .objective = vm["objective"].as<ObjectiveType>(),
     .nSolutions = vm["pool-size"].as<Index>(),
     .nCycles = vm["v-cycles"].as<Index>(),
     .minCoarseningFactor = vm["min-c-factor"].as<double>(),
@@ -130,7 +131,7 @@ PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg)
   };
 }
 
-void report(const Hypergraph &hg) {
+void report(const PartitioningParams &, const Hypergraph &hg) {
   cout << "Nodes: " << hg.nNodes() << endl;
   cout << "Edges: " << hg.nHedges() << endl;
   cout << "Pins: " << hg.nPins() << endl;
@@ -138,11 +139,15 @@ void report(const Hypergraph &hg) {
   cout << endl;
 }
 
-void report(const Hypergraph &hg, const Solution &sol) {
+void report(const PartitioningParams &params, const Hypergraph &hg, const Solution &sol) {
   cout << "Cut: " << hg.metricsCut(sol) << endl;
   if (hg.nParts() > 2) {
     cout << "Connectivity: " << hg.metricsConnectivity(sol) << endl;
     cout << "Maximum degree: " << hg.metricsMaxDegree(sol) << endl;
+    if (params.objective == ObjectiveType::DaisyChainMaxDegree || params.objective == ObjectiveType::DaisyChainDistance) {
+      cout << "Daisy-chain distance: " << hg.metricsDaisyChainDistance(sol) << endl;
+      cout << "Daisy-chain maximum degree: " << hg.metricsDaisyChainMaxDegree(sol) << endl;
+    }
   }
   cout << endl;
 
@@ -165,6 +170,15 @@ void report(const Hypergraph &hg, const Solution &sol) {
     cout << "\tPart#" << p << "  \t";
     cout << degree[p] << endl;
   }
+  if (params.objective == ObjectiveType::DaisyChainMaxDegree || params.objective == ObjectiveType::DaisyChainDistance) {
+    cout << endl;
+    cout << "Daisy-chain partition degrees: " << endl;
+    degree = hg.metricsPartitionDaisyChainDegree(sol);
+    for (Index p = 0; p < hg.nParts(); ++p) {
+      cout << "\tPart#" << p << "  \t";
+      cout << degree[p] << endl;
+    }
+  }
 }
 
 unique_ptr<Objective> readObjective(const po::variables_map &vm) {
@@ -175,6 +189,10 @@ unique_ptr<Objective> readObjective(const po::variables_map &vm) {
       return make_unique<SoedObjective>();
     case ObjectiveType::MaxDegree:
       return make_unique<MaxDegreeObjective>();
+    case ObjectiveType::DaisyChainDistance:
+      return make_unique<DaisyChainDistanceObjective>();
+    case ObjectiveType::DaisyChainMaxDegree:
+      return make_unique<DaisyChainMaxDegreeObjective>();
     default:
       return make_unique<SoedObjective>();
   }
@@ -188,15 +206,15 @@ int main(int argc, char **argv) {
   unique_ptr<Objective> objectivePtr = readObjective(vm);
 
   if (params.verbosity >= 1) {
-    report(hg);
+    report(params, hg);
   }
   Solution sol = BlackboxOptimizer::run(hg, params, *objectivePtr);
 
   if (params.verbosity >= 2) {
-    report(hg);
+    report(params, hg);
   }
   if (params.verbosity >= 1) {
-    report(hg, sol);
+    report(params, hg, sol);
   }
 
   if (vm.count("output")) {

@@ -75,6 +75,36 @@ class IncrementalMaxDegree final : public IncrementalObjective {
   Index currentSoed_;
 };
 
+class IncrementalDaisyChainDistance final : public IncrementalObjective {
+ public:
+  IncrementalDaisyChainDistance (const Hypergraph &hypergraph, Solution &solution);
+  void move(Index node, Index to) override;
+  void checkConsistency() const override;
+
+ private:
+  std::vector<Index> partitionDemands_;
+  std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
+  std::vector<Index> hedgeDegrees_;
+  Index currentDistance_;
+  Index currentSoed_;
+};
+
+
+class IncrementalDaisyChainMaxDegree final : public IncrementalObjective {
+ public:
+  IncrementalDaisyChainMaxDegree (const Hypergraph &hypergraph, Solution &solution);
+  void move(Index node, Index to) override;
+  void checkConsistency() const override;
+
+ private:
+  std::vector<Index> partitionDemands_;
+  std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
+  std::vector<Index> hedgeDegrees_;
+  std::vector<Index> partitionDegrees_;
+  Index currentDistance_;
+};
+
+
 } // End namespace minipart
 
 #endif

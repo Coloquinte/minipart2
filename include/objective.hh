@@ -36,6 +36,18 @@ class MaxDegreeObjective final : public Objective {
   std::vector<std::int64_t> eval(const Hypergraph &, Solution &) const override;
 };
 
+class DaisyChainDistanceObjective final : public Objective {
+ public:
+  std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
+  std::vector<std::int64_t> eval(const Hypergraph &, Solution &) const override;
+};
+
+class DaisyChainMaxDegreeObjective final : public Objective {
+ public:
+  std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
+  std::vector<std::int64_t> eval(const Hypergraph &, Solution &) const override;
+};
+
 } // End namespace minipart
 
 #endif

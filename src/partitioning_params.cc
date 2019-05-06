@@ -17,6 +17,10 @@ std::istream &operator>>(std::istream &is, ObjectiveType &obj) {
     obj = ObjectiveType::Soed;
   else if (token == "max-degree")
     obj = ObjectiveType::MaxDegree;
+  else if (token == "daisy-chain-distance")
+    obj = ObjectiveType::DaisyChainDistance;
+  else if (token == "daisy-chain-max-degree")
+    obj = ObjectiveType::DaisyChainMaxDegree;
   else
     is.setstate(std::ios_base::failbit);
   return is;
@@ -32,6 +36,12 @@ std::ostream &operator<<(std::ostream &os, const ObjectiveType &obj) {
       break;
     case ObjectiveType::MaxDegree:
       os << "max-degree";
+      break;
+    case ObjectiveType::DaisyChainDistance:
+      os << "daisy-chain-distance";
+      break;
+    case ObjectiveType::DaisyChainMaxDegree:
+      os << "daisy-chain-max-degree";
       break;
   }
   return os;

@@ -33,9 +33,12 @@ class Hypergraph {
   Index metricsConnectivity(const Solution &solution) const;
   Index metricsSumOverflow(const Solution &solution) const;
   Index metricsMaxDegree(const Solution &solution) const;
+  Index metricsDaisyChainDistance(const Solution &solution) const;
+  Index metricsDaisyChainMaxDegree(const Solution &solution) const;
 
   std::vector<Index> metricsPartitionUsage(const Solution &solution) const;
   std::vector<Index> metricsPartitionDegree(const Solution &solution) const;
+  std::vector<Index> metricsPartitionDaisyChainDegree(const Solution &solution) const;
 
   // IO functions
   static Hypergraph readHgr(std::istream &);
