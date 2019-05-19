@@ -4,6 +4,7 @@
 #include "partitioning_params.hh"
 #include "blackbox_optimizer.hh"
 #include "objective.hh"
+#include "config.hh"
 
 #include <iostream>
 #include <iomanip>

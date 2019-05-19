@@ -6,7 +6,20 @@ SET(CMAKE_CXX_FLAGS "-g -Wall -std=c++14")
 
 FIND_PACKAGE(Boost COMPONENTS system filesystem program_options unit_test_framework REQUIRED)
 
-INCLUDE_DIRECTORIES(${MINIPART_SOURCE_DIR}/include)
+INCLUDE_DIRECTORIES(
+    ${MINIPART_SOURCE_DIR}/include
+    ${MINIPART_BINARY_DIR}
+)
+
+set (MINIPART_VERSION_MAJOR 0)
+set (MINIPART_VERSION_MINOR 1)
+set (MINIPART_VERSION_PATCH 0)
+set (MINIPART_BUILD_DATE string(TIMESTAMP TODAY "%Y-%m-%d"))
+
+configure_file (
+  "${MINIPART_SOURCE_DIR}/include/config.hh.in"
+  "${MINIPART_BINARY_DIR}/config.hh"
+)
 
 SET (SOURCES
   src/hypergraph.cc
