@@ -140,6 +140,7 @@ IncrementalCut::IncrementalCut(const Hypergraph &hypergraph, Solution &solution)
   hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
   currentCut_ = computeCut(hypergraph, hedgeDegrees_);
   currentSoed_ = computeSoed(hypergraph, hedgeDegrees_);
+  setObjective();
 }
 
 IncrementalSoed::IncrementalSoed(const Hypergraph &hypergraph, Solution &solution)
@@ -148,6 +149,7 @@ IncrementalSoed::IncrementalSoed(const Hypergraph &hypergraph, Solution &solutio
   hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition(hypergraph, solution);
   hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
   currentSoed_ = computeSoed(hypergraph, hedgeDegrees_);
+  setObjective();
 }
 
 IncrementalMaxDegree::IncrementalMaxDegree(const Hypergraph &hypergraph, Solution &solution)
@@ -157,6 +159,7 @@ IncrementalMaxDegree::IncrementalMaxDegree(const Hypergraph &hypergraph, Solutio
   hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
   partitionDegrees_ = computePartitionDegrees(hypergraph, hedgeDegrees_, hedgeNbPinsPerPartition_);
   currentSoed_ = computeSoed(hypergraph, hedgeDegrees_);
+  setObjective();
 }
 
 IncrementalDaisyChainDistance::IncrementalDaisyChainDistance(const Hypergraph &hypergraph, Solution &solution)
@@ -166,6 +169,7 @@ IncrementalDaisyChainDistance::IncrementalDaisyChainDistance(const Hypergraph &h
   hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
   currentDistance_ = computeDaisyChainDistance(hypergraph, hedgeNbPinsPerPartition_);
   currentSoed_ = computeSoed(hypergraph, hedgeDegrees_);
+  setObjective();
 }
 
 IncrementalDaisyChainMaxDegree::IncrementalDaisyChainMaxDegree(const Hypergraph &hypergraph, Solution &solution)
@@ -175,6 +179,7 @@ IncrementalDaisyChainMaxDegree::IncrementalDaisyChainMaxDegree(const Hypergraph 
   hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
   partitionDegrees_ = computeDaisyChainPartitionDegrees(hypergraph, hedgeNbPinsPerPartition_);
   currentDistance_ = computeDaisyChainDistance(hypergraph, hedgeNbPinsPerPartition_);
+  setObjective();
 }
 
 void IncrementalCut::checkConsistency() const {
@@ -216,6 +221,35 @@ void IncrementalDaisyChainMaxDegree::checkConsistency() const {
   assert (partitionDegrees_ == computeDaisyChainPartitionDegrees(hypergraph_, hedgeNbPinsPerPartition_));
 }
 
+void IncrementalCut::setObjective() {
+  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
+  objectives_[1] = currentCut_;
+  objectives_[2] = currentSoed_;
+}
+
+void IncrementalSoed::setObjective() {
+  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
+  objectives_[1] = currentSoed_;
+}
+
+void IncrementalMaxDegree::setObjective() {
+  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
+  objectives_[1] = computeMaxDegree(hypergraph_, partitionDegrees_);
+  objectives_[2] = currentSoed_;
+}
+
+void IncrementalDaisyChainDistance::setObjective() {
+  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
+  objectives_[1] = currentDistance_;
+  objectives_[2] = currentSoed_;
+}
+
+void IncrementalDaisyChainMaxDegree::setObjective() {
+  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
+  objectives_[1] = computeMaxDegree(hypergraph_, partitionDegrees_);
+  objectives_[2] = currentDistance_;
+}
+
 void IncrementalCut::move(Index node, Index to) {
   assert (to < nParts() && to >= 0);
   Index from = solution_[node];
@@ -243,9 +277,7 @@ void IncrementalCut::move(Index node, Index to) {
       currentSoed_ -= hypergraph_.hedgeWeight(hedge);
     }
   }
-  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
-  objectives_[1] = currentCut_;
-  objectives_[2] = currentSoed_;
+  setObjective();
 }
 
 void IncrementalSoed::move(Index node, Index to) {
@@ -269,8 +301,7 @@ void IncrementalSoed::move(Index node, Index to) {
       currentSoed_ -= hypergraph_.hedgeWeight(hedge);
     }
   }
-  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
-  objectives_[1] = currentSoed_;
+  setObjective();
 }
 
 void IncrementalMaxDegree::move(Index node, Index to) {
@@ -319,10 +350,7 @@ void IncrementalMaxDegree::move(Index node, Index to) {
       }
     }
   }
-
-  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
-  objectives_[1] = computeMaxDegree(hypergraph_, partitionDegrees_);
-  objectives_[2] = currentSoed_;
+  setObjective();
 }
 
 void IncrementalDaisyChainDistance::move(Index node, Index to) {
@@ -367,10 +395,7 @@ void IncrementalDaisyChainDistance::move(Index node, Index to) {
       currentDistance_ += hypergraph_.hedgeWeight(hedge) * (maxAfter - minAfter - maxBefore + minBefore);
     }
   }
-
-  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
-  objectives_[1] = currentDistance_;
-  objectives_[2] = currentSoed_;
+  setObjective();
 }
 
 void IncrementalDaisyChainMaxDegree::move(Index node, Index to) {
@@ -424,10 +449,7 @@ void IncrementalDaisyChainMaxDegree::move(Index node, Index to) {
       }
     }
   }
-
-  objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
-  objectives_[1] = computeMaxDegree(hypergraph_, partitionDegrees_);
-  objectives_[2] = currentDistance_;
+  setObjective();
 }
 
 } // End namespace minipart

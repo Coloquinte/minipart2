@@ -41,6 +41,9 @@ class IncrementalCut final : public IncrementalObjective {
   void checkConsistency() const override;
 
  private:
+  void setObjective();
+
+ private:
   std::vector<Index> partitionDemands_;
   std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
   std::vector<Index> hedgeDegrees_;
@@ -55,6 +58,9 @@ class IncrementalSoed final : public IncrementalObjective {
   void checkConsistency() const override;
 
  private:
+  void setObjective();
+
+ private:
   std::vector<Index> partitionDemands_;
   std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
   std::vector<Index> hedgeDegrees_;
@@ -66,6 +72,9 @@ class IncrementalMaxDegree final : public IncrementalObjective {
   IncrementalMaxDegree(const Hypergraph &hypergraph, Solution &solution);
   void move(Index node, Index to) override;
   void checkConsistency() const override;
+
+ private:
+  void setObjective();
 
  private:
   std::vector<Index> partitionDemands_;
@@ -82,6 +91,9 @@ class IncrementalDaisyChainDistance final : public IncrementalObjective {
   void checkConsistency() const override;
 
  private:
+  void setObjective();
+
+ private:
   std::vector<Index> partitionDemands_;
   std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
   std::vector<Index> hedgeDegrees_;
@@ -95,6 +107,9 @@ class IncrementalDaisyChainMaxDegree final : public IncrementalObjective {
   IncrementalDaisyChainMaxDegree (const Hypergraph &hypergraph, Solution &solution);
   void move(Index node, Index to) override;
   void checkConsistency() const override;
+
+ private:
+  void setObjective();
 
  private:
   std::vector<Index> partitionDemands_;
