@@ -1,14 +1,23 @@
 #!/usr/bin/python3
 
-from collections import namedtuple
+from collections import namedtuple, defaultdict
 import sqlite3
 import datetime
 import subprocess
 import multiprocessing
+import pandas as pd
 
 MinipartParams  = namedtuple("MinipartParams", ["bench", "version", "partitions", "imbalance", "objective", "v_cycles", "pool_size", "move_ratio", "seed"])
-MinipartResults = namedtuple("MinipartParams", ["cut", "connectivity", "max_degree"])
+MinipartResults = namedtuple("MinipartResults", ["cut", "connectivity", "max_degree"])
 MinipartData    = namedtuple("MinipartData", MinipartParams._fields + MinipartResults._fields)
+
+def extractParams(data):
+    fields = [d for f, d in zip(MinipartParams._fields, data)]
+    return MinipartParams(*fields)
+
+def extractResults(data):
+    fields = data[len(MinipartParams._fields):]
+    return MinipartResults(*fields)
 
 def create_db():
     conn = sqlite3.connect("results.db")
@@ -28,7 +37,7 @@ def list_benchs():
     return [ "ibm%02d" % (i,) for i in range(1,19)]
 
 def list_partitions():
-    return [2, 3]
+    return [2, 3, 4]
 
 def list_imbalance():
     return [5]
@@ -54,29 +63,47 @@ def list_seeds():
 def list_params():
     params = []
     version = "2019-05-05"
-    for bench in list_benchs():
+    for seed in list_seeds():
       for partitions in list_partitions():
         for imbalance in list_imbalance():
           for objective in list_objective(partitions):
             for v_cycles in list_v_cycles():
               for pool_size in list_pool_size():
                 for move_ratio in list_move_ratio():
-                  for seed in list_seeds():
-                    cur = MinipartParams(bench, version, partitions, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
-                    params.append(cur)
+                  for bench in list_benchs():
+                      cur = MinipartParams(bench, version, partitions, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
+                      params.append(cur)
     return params
+
+def get_params_result(params):
+    conn = sqlite3.connect("results.db")
+    c = conn.cursor()
+    c.execute('''SELECT * FROM minipart
+      WHERE bench=? and version=? and partitions=? and imbalance=?
+      and objective=? and v_cycles=? and pool_size=?
+      and move_ratio=? and seed=?''', params)
+    res = c.fetchall()
+    assert len(res) <= 1
+    if len(res) == 0:
+      return None
+    else:
+      return MinipartData(*res[0])
+
+def get_version_results(version):
+    conn = sqlite3.connect("results.db")
+    c = conn.cursor()
+    c.execute('''SELECT * FROM minipart
+      WHERE version=?''', (version,) )
+    res = c.fetchall()
+    return [MinipartData(*r) for r in res]
 
 def filter_new_params(params):
     conn = sqlite3.connect("results.db")
     c = conn.cursor()
     new_params = []
     for p in params:
-      c.execute('''SELECT * FROM minipart
-        WHERE bench=? and version=? and partitions=? and imbalance=?
-        and objective=? and v_cycles=? and pool_size=?
-        and move_ratio=? and seed=?''', p)
-      res = c.fetchall()
-      if len(res) == 0:
+      res = get_params_result(p)
+      if res is None:
         new_params.append(p)
     return new_params
 
@@ -131,4 +158,39 @@ def run_benchmarks():
     pool = multiprocessing.Pool(8)
     pool.map(run_benchmark, params)
 
+def gather_results():
+    all_results = get_version_results('2019-05-05')
+    res = defaultdict(list)
+    for data in all_results:
+      params = extractParams(data)
+      params = params._replace(seed=None)
+      results = extractResults(data)
+      res[params].append(results)
+    average_results = dict()
+    best_results = dict()
+    worst_results = dict()
+    cut_df = pd.DataFrame(["benchmark", "value"])
+    connectivity_df = pd.DataFrame(["benchmark", "value"])
+    max_degree_df = pd.DataFrame(["benchmark", "value"])
+    for params, res_list in res.items():
+      average_results[params] = MinipartResults(
+        sum(r.cut for r in res_list) / len(res_list),
+        sum(r.connectivity for r in res_list) / len(res_list),
+        sum(r.max_degree for r in res_list) / len(res_list)
+      )
+      best_results[params] = MinipartResults(
+        min(r.cut for r in res_list),
+        min(r.connectivity for r in res_list),
+        min(r.max_degree for r in res_list)
+      )
+      worst_results[params] = MinipartResults(
+        max(r.cut for r in res_list),
+        max(r.connectivity for r in res_list),
+        max(r.max_degree for r in res_list)
+      )
+      
+# TODO: exports the results to a CSV (somehow)
+
 run_benchmarks()
+gather_results()
+
