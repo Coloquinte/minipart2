@@ -9,11 +9,49 @@
 namespace minipart {
 
 enum class ObjectiveType {
+  /*
+   * Minimize the number of edges cut
+   under capacity constraints
+   */
   Cut,
+
+  /*
+   * Minimize the sum of the edge degrees (connectivity)
+   * under capacity constraints
+   */
   Soed,
+
+  /*
+   * Minimize the degree of the most connected block
+   * under capacity constraints
+   */
   MaxDegree,
+
+  /*
+   * Minimize the sum of distances
+   * in a daisy chain topology
+   * under capacity constraints
+   */
   DaisyChainDistance,
-  DaisyChainMaxDegree
+
+  /*
+   * Minimize the degree of the most connected block
+   * in a daisy chain topology
+   * under capacity constraints
+   */
+  DaisyChainMaxDegree,
+
+  /*
+   * Minimize the number of edges cut
+   * scaled by block usage
+   */
+  RatioCut,
+
+  /*
+   * Minimize the sum of the edge degrees (connectivity),
+   * scaled by block usage
+   */
+  RatioSoed
 };
 
 std::istream & operator>>(std::istream &, ObjectiveType &);

@@ -258,6 +258,22 @@ Index Hypergraph::metricsDaisyChainMaxDegree(const Solution &solution) const {
   return *max_element(degree.begin(), degree.end());
 }
 
+double Hypergraph::metricsRatioCut(const Solution &solution) const {
+  double productUsage = 1.0;
+  for (Index d : metricsPartitionUsage(solution))
+    productUsage *= d;
+  double cut = metricsCut(solution);
+  return cut / productUsage;
+}
+
+double Hypergraph::metricsRatioSoed(const Solution &solution) const {
+  double productUsage = 1.0;
+  for (Index d : metricsPartitionUsage(solution))
+    productUsage *= d;
+  double soed = metricsSoed(solution);
+  return soed / productUsage;
+}
+
 std::vector<Index> Hypergraph::metricsPartitionUsage(const Solution &solution) const {
   assert (solution.nNodes() == nNodes());
   assert (solution.nParts() == nParts());

@@ -35,6 +35,9 @@ class Hypergraph {
   Index metricsMaxDegree(const Solution &solution) const;
   Index metricsDaisyChainDistance(const Solution &solution) const;
   Index metricsDaisyChainMaxDegree(const Solution &solution) const;
+  double metricsRatioCut(const Solution &solution) const;
+  double metricsRatioSoed(const Solution &solution) const;
+  Index metricsNonEmptyPartitions(const Solution &solution) const;
 
   std::vector<Index> metricsPartitionUsage(const Solution &solution) const;
   std::vector<Index> metricsPartitionDegree(const Solution &solution) const;

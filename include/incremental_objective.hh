@@ -24,14 +24,14 @@ class IncrementalObjective {
 
   const Hypergraph &hypergraph() const { return hypergraph_; }
   const Solution& solution() const { return solution_; }
-  const std::vector<std::int64_t>& objectives() const { return objectives_; }
+  const std::vector<double>& objectives() const { return objectives_; }
 
   virtual ~IncrementalObjective() {}
 
  protected:
   const Hypergraph &hypergraph_;
   Solution &solution_;
-  std::vector<std::int64_t> objectives_;
+  std::vector<double> objectives_;
 };
 
 class IncrementalCut final : public IncrementalObjective {
@@ -119,6 +119,39 @@ class IncrementalDaisyChainMaxDegree final : public IncrementalObjective {
   Index currentDistance_;
 };
 
+class IncrementalRatioCut final : public IncrementalObjective {
+ public:
+  IncrementalRatioCut (const Hypergraph &hypergraph, Solution &solution);
+  void move(Index node, Index to) override;
+  void checkConsistency() const override;
+
+ private:
+  void setObjective();
+
+ private:
+  std::vector<Index> partitionDemands_;
+  std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
+  std::vector<Index> hedgeDegrees_;
+  Index currentCut_;
+  Index currentSoed_;
+};
+
+class IncrementalRatioSoed final : public IncrementalObjective {
+ public:
+  IncrementalRatioSoed (const Hypergraph &hypergraph, Solution &solution);
+  void move(Index node, Index to) override;
+  void checkConsistency() const override;
+
+ private:
+  void setObjective();
+
+ private:
+  std::vector<Index> partitionDemands_;
+  std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
+  std::vector<Index> hedgeDegrees_;
+  Index currentCut_;
+  Index currentSoed_;
+};
 
 } // End namespace minipart
 

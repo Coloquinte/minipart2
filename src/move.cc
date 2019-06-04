@@ -15,9 +15,9 @@ void SimpleMove::run(IncrementalObjective &inc, std::mt19937 &rgen) {
   Index src = inc.solution()[node];
   Index dst = partDist(rgen);
 
-  vector<int64_t> before = inc.objectives();
+  vector<double> before = inc.objectives();
   inc.move(node, dst);
-  vector<int64_t> after = inc.objectives();
+  vector<double> after = inc.objectives();
   if (before < after) {
     inc.move(node, src);
   }
@@ -34,10 +34,10 @@ void SimpleSwap::run(IncrementalObjective &inc, std::mt19937 &rgen) {
   Index p2 = inc.solution()[n2];
   if (p1 == p2) return;
 
-  vector<int64_t> before = inc.objectives();
+  vector<double> before = inc.objectives();
   inc.move(n1, p2);
   inc.move(n2, p1);
-  vector<int64_t> after = inc.objectives();
+  vector<double> after = inc.objectives();
   if (before < after) {
     inc.move(n1, p1);
     inc.move(n2, p2);
@@ -57,13 +57,13 @@ void EdgeMove::run(IncrementalObjective &inc, std::mt19937 &rgen) {
     return;
   }
 
-  vector<int64_t> before = inc.objectives();
+  vector<double> before = inc.objectives();
   for (Index node : inc.hypergraph().hedgeNodes(hedge)) {
     Index src = inc.solution()[node];
     inc.move(node, dst);
     initialStatus_.emplace_back(node, src);
   }
-  vector<int64_t> after = inc.objectives();
+  vector<double> after = inc.objectives();
   if (before < after) {
     for (std::pair<Index, Index> status : initialStatus_) {
       inc.move(status.first, status.second);
@@ -88,9 +88,9 @@ void AbsorptionMove::run(IncrementalObjective &inc, std::mt19937 &rgen) {
       continue;
     --this->budget_;
 
-    vector<int64_t> before = inc.objectives();
+    vector<double> before = inc.objectives();
     inc.move(node, dst);
-    vector<int64_t> after = inc.objectives();
+    vector<double> after = inc.objectives();
     if (before < after) {
       inc.move(node, src);
     }

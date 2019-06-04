@@ -194,8 +194,13 @@ unique_ptr<Objective> readObjective(const po::variables_map &vm) {
       return make_unique<DaisyChainDistanceObjective>();
     case ObjectiveType::DaisyChainMaxDegree:
       return make_unique<DaisyChainMaxDegreeObjective>();
+    case ObjectiveType::RatioCut:
+      return make_unique<RatioCutObjective>();
+    case ObjectiveType::RatioSoed:
+      return make_unique<RatioSoedObjective>();
     default:
-      return make_unique<SoedObjective>();
+      cout << "Objective type is not supported." << endl;
+      exit(1);
   }
 }
 
