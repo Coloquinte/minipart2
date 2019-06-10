@@ -158,6 +158,28 @@ def run_benchmarks():
     pool = multiprocessing.Pool(8)
     pool.map(run_benchmark, params)
 
+def extract_dataframe(params_to_results, objective) :
+    columns_params = [p for p in MinipartParams._fields if p not in ["seed", "objective"]]
+    columns_results = ["nb_runs",
+        "best_cut", "worst_cut", "average_cut",
+        "best_connectivity", "worst_connectivity", "average_connectivity",
+        "best_max_degree", "worst_max_degree", "average_max_degree",
+    ]
+    df = pd.DataFrame(columns=columns_params + columns_results)
+    i = 0
+    for params, res_list in sorted(params_to_results.items()):
+      if params.objective != objective:
+        continue
+      all_metrics = [len(res_list), ]
+      for metric in ["cut", "connectivity", "max_degree"]:
+        best = min(getattr(r, metric) for r in res_list)
+        worst = max(getattr(r, metric) for r in res_list)
+        average = sum(getattr(r, metric) for r in res_list) / len(res_list)
+        all_metrics += [best, worst, average]
+      df.loc[i] = [getattr(params, c) for c in columns_params] + all_metrics
+      i += 1
+    return df
+
 def gather_results():
     all_results = get_version_results('2019-05-05')
     res = defaultdict(list)
@@ -166,31 +188,13 @@ def gather_results():
       params = params._replace(seed=None)
       results = extractResults(data)
       res[params].append(results)
-    average_results = dict()
-    best_results = dict()
-    worst_results = dict()
-    cut_df = pd.DataFrame(["benchmark", "value"])
-    connectivity_df = pd.DataFrame(["benchmark", "value"])
-    max_degree_df = pd.DataFrame(["benchmark", "value"])
-    for params, res_list in res.items():
-      average_results[params] = MinipartResults(
-        sum(r.cut for r in res_list) / len(res_list),
-        sum(r.connectivity for r in res_list) / len(res_list),
-        sum(r.max_degree for r in res_list) / len(res_list)
-      )
-      best_results[params] = MinipartResults(
-        min(r.cut for r in res_list),
-        min(r.connectivity for r in res_list),
-        min(r.max_degree for r in res_list)
-      )
-      worst_results[params] = MinipartResults(
-        max(r.cut for r in res_list),
-        max(r.connectivity for r in res_list),
-        max(r.max_degree for r in res_list)
-      )
-      
-# TODO: exports the results to a CSV (somehow)
+    cut_df = extract_dataframe(res, "cut")
+    cut_df.to_csv("report_cut.csv", index=False)
+    cut_df = extract_dataframe(res, "soed")
+    cut_df.to_csv("report_connectivity.csv", index=False)
+    cut_df = extract_dataframe(res, "max-degree")
+    cut_df.to_csv("report_max-degree.csv", index=False)
 
-run_benchmarks()
+#run_benchmarks()
 gather_results()
 
