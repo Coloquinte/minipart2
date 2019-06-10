@@ -117,12 +117,16 @@ Index computeSumOverflow(const Hypergraph &hypergraph, const vector<Index> &part
   return ret;
 }
 
-double computeProductDemands(const Hypergraph &hypergraph, const vector<Index> &partitionDemands) {
-  double ret = 1.0;
-  for (Index p = 0; p < hypergraph.nParts(); ++p) {
-    ret *= partitionDemands[p];
+double computeRatioPenalty(const Hypergraph &hypergraph, const vector<Index> &partitionDemands) {
+  Index sumDemands = 0;
+  for (Index d : partitionDemands)
+    sumDemands += d;
+  double normalizedDemands = ((double) sumDemands) / partitionDemands.size();
+  double productDemands = 1.0;
+  for (Index d : partitionDemands) {
+    productDemands *= (d / normalizedDemands);
   }
-  return ret;
+  return 1.0 / productDemands;
 }
 
 Index computeMaxDegree(const Hypergraph &, const vector<Index> &partitionDegrees) {
@@ -209,6 +213,16 @@ IncrementalRatioSoed::IncrementalRatioSoed(const Hypergraph &hypergraph, Solutio
   setObjective();
 }
 
+IncrementalRatioMaxDegree::IncrementalRatioMaxDegree(const Hypergraph &hypergraph, Solution &solution)
+: IncrementalObjective(hypergraph, solution, 2) {
+  partitionDemands_ = computePartitionDemands(hypergraph, solution);
+  hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition(hypergraph, solution);
+  hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
+  partitionDegrees_ = computePartitionDegrees(hypergraph, hedgeDegrees_, hedgeNbPinsPerPartition_);
+  currentSoed_ = computeSoed(hypergraph, hedgeDegrees_);
+  setObjective();
+}
+
 void IncrementalCut::checkConsistency() const {
   assert (partitionDemands_ == computePartitionDemands(hypergraph_, solution_));
   assert (hedgeNbPinsPerPartition_ == computeHedgeNbPinsPerPartition(hypergraph_, solution_));
@@ -263,6 +277,14 @@ void IncrementalRatioSoed::checkConsistency() const {
   assert (currentSoed_ == computeSoed(hypergraph_, hedgeDegrees_));
 }
 
+void IncrementalRatioMaxDegree::checkConsistency() const {
+  assert (partitionDemands_ == computePartitionDemands(hypergraph_, solution_));
+  assert (hedgeNbPinsPerPartition_ == computeHedgeNbPinsPerPartition(hypergraph_, solution_));
+  assert (hedgeDegrees_ == computeHedgeDegrees(hypergraph_, hedgeNbPinsPerPartition_));
+  assert (partitionDegrees_ == computePartitionDegrees(hypergraph_, hedgeDegrees_, hedgeNbPinsPerPartition_));
+  assert (currentSoed_ == computeSoed(hypergraph_, hedgeDegrees_));
+}
+
 void IncrementalCut::setObjective() {
   objectives_[0] = computeSumOverflow(hypergraph_, partitionDemands_);
   objectives_[1] = currentCut_;
@@ -293,13 +315,18 @@ void IncrementalDaisyChainMaxDegree::setObjective() {
 }
 
 void IncrementalRatioCut::setObjective() {
-  objectives_[0] = currentCut_ / computeProductDemands(hypergraph_, partitionDemands_);
+  objectives_[0] = currentCut_ * computeRatioPenalty(hypergraph_, partitionDemands_);
   objectives_[1] = currentCut_;
   objectives_[2] = currentSoed_;
 }
 
 void IncrementalRatioSoed::setObjective() {
-  objectives_[0] = currentSoed_ / computeProductDemands(hypergraph_, partitionDemands_);
+  objectives_[0] = currentSoed_ * computeRatioPenalty(hypergraph_, partitionDemands_);
+  objectives_[1] = currentSoed_;
+}
+
+void IncrementalRatioMaxDegree::setObjective() {
+  objectives_[0] = computeMaxDegree(hypergraph_, partitionDegrees_) * computeRatioPenalty(hypergraph_, partitionDemands_);
   objectives_[1] = currentSoed_;
 }
 
@@ -565,5 +592,53 @@ void IncrementalRatioSoed::move(Index node, Index to) {
   setObjective();
 }
 
+void IncrementalRatioMaxDegree::move(Index node, Index to) {
+  assert (to < nParts() && to >= 0);
+  Index from = solution_[node];
+  if (from == to) return;
+  solution_[node] = to;
+  partitionDemands_[to]   += hypergraph_.nodeWeight(node);
+  partitionDemands_[from] -= hypergraph_.nodeWeight(node);
+
+  for (Index hedge : hypergraph_.nodeHedges(node)) {
+    vector<Index> &pins = hedgeNbPinsPerPartition_[hedge];
+    ++pins[to];
+    --pins[from];
+    bool becomesCut = false;
+    bool becomesUncut = false;
+    if (pins[to] == 1 && pins[from] != 0) {
+      ++hedgeDegrees_[hedge];
+      if (hedgeDegrees_[hedge] == 2) {
+        becomesCut = true;
+      }
+      currentSoed_ += hypergraph_.hedgeWeight(hedge);
+    }
+    if (pins[to] != 1 && pins[from] == 0) {
+      --hedgeDegrees_[hedge];
+      if (hedgeDegrees_[hedge] == 1) {
+        becomesUncut = true;
+      }
+      currentSoed_ -= hypergraph_.hedgeWeight(hedge);
+    }
+
+    if (becomesUncut) {
+      partitionDegrees_[from] -= hypergraph_.hedgeWeight(hedge);
+      partitionDegrees_[to] -= hypergraph_.hedgeWeight(hedge);
+    }
+    else if (becomesCut) {
+      partitionDegrees_[from] += hypergraph_.hedgeWeight(hedge);
+      partitionDegrees_[to] += hypergraph_.hedgeWeight(hedge);
+    }
+    else if (hedgeDegrees_[hedge] >= 2) {
+      if (pins[from] == 0) {
+        partitionDegrees_[from] -= hypergraph_.hedgeWeight(hedge);
+      }
+      if (pins[to] == 1) {
+        partitionDegrees_[to] += hypergraph_.hedgeWeight(hedge);
+      }
+    }
+  }
+  setObjective();
+}
 
 } // End namespace minipart

@@ -51,7 +51,13 @@ enum class ObjectiveType {
    * Minimize the sum of the edge degrees (connectivity),
    * scaled by block usage
    */
-  RatioSoed
+  RatioSoed,
+
+  /*
+   * Minimize the degree of the most connected block
+   * scaled by block usage
+   */
+  RatioMaxDegree
 };
 
 std::istream & operator>>(std::istream &, ObjectiveType &);

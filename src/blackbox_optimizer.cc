@@ -61,7 +61,7 @@ void BlackboxOptimizer::reportStartCycle() const {
 void BlackboxOptimizer::reportEndCycle() const {
   if (params_.verbosity >= 2) {
     Solution solution = bestSolution();
-    vector<double> obj = objective_.eval(hypergraph_, solution);
+    vector<int64_t> obj = objective_.eval(hypergraph_, solution);
     cout << "Objectives: ";
     for (size_t i = 0; i < obj.size(); ++i) {
       if (i > 0) cout << ", ";

@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <unordered_map>
+#include <iostream>
 
 using namespace std;
 
@@ -258,20 +259,33 @@ Index Hypergraph::metricsDaisyChainMaxDegree(const Solution &solution) const {
   return *max_element(degree.begin(), degree.end());
 }
 
-double Hypergraph::metricsRatioCut(const Solution &solution) const {
+double Hypergraph::metricsRatioPenalty(const Solution &solution) const {
+  vector<Index> partitionUsage = metricsPartitionUsage(solution);
+  Index sumUsage = 0;
+  for (Index d : partitionUsage)
+    sumUsage += d;
+  double normalizedUsage = ((double) sumUsage) / partitionUsage.size();
   double productUsage = 1.0;
-  for (Index d : metricsPartitionUsage(solution))
-    productUsage *= d;
-  double cut = metricsCut(solution);
-  return cut / productUsage;
+  for (Index d : partitionUsage) {
+    productUsage *= (d / normalizedUsage);
+  }
+  return 1.0 / productUsage;
+}
+
+double Hypergraph::metricsRatioCut(const Solution &solution) const {
+  return metricsCut(solution) * metricsRatioPenalty(solution);
 }
 
 double Hypergraph::metricsRatioSoed(const Solution &solution) const {
-  double productUsage = 1.0;
-  for (Index d : metricsPartitionUsage(solution))
-    productUsage *= d;
-  double soed = metricsSoed(solution);
-  return soed / productUsage;
+  return metricsSoed(solution) * metricsRatioPenalty(solution);
+}
+
+double Hypergraph::metricsRatioConnectivity(const Solution &solution) const {
+  return metricsConnectivity(solution) * metricsRatioPenalty(solution);
+}
+
+double Hypergraph::metricsRatioMaxDegree(const Solution &solution) const {
+  return metricsMaxDegree(solution) * metricsRatioPenalty(solution);
 }
 
 std::vector<Index> Hypergraph::metricsPartitionUsage(const Solution &solution) const {

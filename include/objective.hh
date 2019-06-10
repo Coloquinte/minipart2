@@ -14,50 +14,56 @@ namespace minipart {
 class Objective {
  public:
   virtual std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const =0;
-  virtual std::vector<double> eval(const Hypergraph &, Solution &) const =0;
+  virtual std::vector<int64_t> eval(const Hypergraph &, Solution &) const =0;
   virtual ~Objective() {}
 };
 
 class CutObjective final : public Objective {
  public:
   std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
-  std::vector<double> eval(const Hypergraph &, Solution &) const override;
+  std::vector<int64_t> eval(const Hypergraph &, Solution &) const override;
 };
 
 class SoedObjective final : public Objective {
  public:
   std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
-  std::vector<double> eval(const Hypergraph &, Solution &) const override;
+  std::vector<int64_t> eval(const Hypergraph &, Solution &) const override;
 };
 
 class MaxDegreeObjective final : public Objective {
  public:
   std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
-  std::vector<double> eval(const Hypergraph &, Solution &) const override;
+  std::vector<int64_t> eval(const Hypergraph &, Solution &) const override;
 };
 
 class DaisyChainDistanceObjective final : public Objective {
  public:
   std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
-  std::vector<double> eval(const Hypergraph &, Solution &) const override;
+  std::vector<int64_t> eval(const Hypergraph &, Solution &) const override;
 };
 
 class DaisyChainMaxDegreeObjective final : public Objective {
  public:
   std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
-  std::vector<double> eval(const Hypergraph &, Solution &) const override;
+  std::vector<int64_t> eval(const Hypergraph &, Solution &) const override;
 };
 
 class RatioCutObjective final : public Objective {
  public:
   std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
-  std::vector<double> eval(const Hypergraph &, Solution &) const override;
+  std::vector<int64_t> eval(const Hypergraph &, Solution &) const override;
 };
 
 class RatioSoedObjective final : public Objective {
  public:
   std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
-  std::vector<double> eval(const Hypergraph &, Solution &) const override;
+  std::vector<int64_t> eval(const Hypergraph &, Solution &) const override;
+};
+
+class RatioMaxDegreeObjective final : public Objective {
+ public:
+  std::unique_ptr<IncrementalObjective> incremental(const Hypergraph &, Solution &) const override;
+  std::vector<int64_t> eval(const Hypergraph &, Solution &) const override;
 };
 
 } // End namespace minipart

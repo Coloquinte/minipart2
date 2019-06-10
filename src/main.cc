@@ -150,14 +150,26 @@ void report(const PartitioningParams &, const Hypergraph &hg) {
 }
 
 void report(const PartitioningParams &params, const Hypergraph &hg, const Solution &sol) {
+  bool isRatioObj = params.objective == ObjectiveType::RatioCut || params.objective == ObjectiveType::RatioSoed || params.objective == ObjectiveType::RatioMaxDegree;
+  bool isDaisyChainObj = params.objective == ObjectiveType::DaisyChainMaxDegree || params.objective == ObjectiveType::DaisyChainDistance;
   cout << "Cut: " << hg.metricsCut(sol) << endl;
   if (hg.nParts() > 2) {
     cout << "Connectivity: " << hg.metricsConnectivity(sol) << endl;
     cout << "Maximum degree: " << hg.metricsMaxDegree(sol) << endl;
-    if (params.objective == ObjectiveType::DaisyChainMaxDegree || params.objective == ObjectiveType::DaisyChainDistance) {
+  }
+  if (isDaisyChainObj) {
+    if (hg.nParts() > 2) {
       cout << "Daisy-chain distance: " << hg.metricsDaisyChainDistance(sol) << endl;
       cout << "Daisy-chain maximum degree: " << hg.metricsDaisyChainMaxDegree(sol) << endl;
     }
+  }
+  if (isRatioObj) {
+    cout << "Ratio cut: " << hg.metricsRatioCut(sol) << endl;
+    if (hg.nParts() > 2) {
+      cout << "Ratio connectivity: " << hg.metricsRatioConnectivity(sol) << endl;
+      cout << "Ratio maximum degree: " << hg.metricsRatioMaxDegree(sol) << endl;
+    }
+    cout << "Ratio penalty: " << hg.metricsRatioPenalty(sol) << endl;
   }
   cout << endl;
 
@@ -207,6 +219,8 @@ unique_ptr<Objective> readObjective(const po::variables_map &vm) {
       return make_unique<RatioCutObjective>();
     case ObjectiveType::RatioSoed:
       return make_unique<RatioSoedObjective>();
+    case ObjectiveType::RatioMaxDegree:
+      return make_unique<RatioMaxDegreeObjective>();
     default:
       cout << "Objective type is not supported." << endl;
       exit(1);

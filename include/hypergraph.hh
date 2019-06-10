@@ -28,17 +28,19 @@ class Hypergraph {
   Index partWeight  (Index part)  const { return partWeights_[part]; }
 
   // Metrics
+  Index metricsSumOverflow(const Solution &solution) const;
   Index metricsCut(const Solution &solution) const;
   Index metricsSoed(const Solution &solution) const;
   Index metricsConnectivity(const Solution &solution) const;
-  Index metricsSumOverflow(const Solution &solution) const;
   Index metricsMaxDegree(const Solution &solution) const;
   Index metricsDaisyChainDistance(const Solution &solution) const;
   Index metricsDaisyChainMaxDegree(const Solution &solution) const;
   double metricsRatioCut(const Solution &solution) const;
   double metricsRatioSoed(const Solution &solution) const;
-  Index metricsNonEmptyPartitions(const Solution &solution) const;
+  double metricsRatioConnectivity(const Solution &solution) const;
+  double metricsRatioMaxDegree(const Solution &solution) const;
 
+  double metricsRatioPenalty(const Solution &solution) const;
   std::vector<Index> metricsPartitionUsage(const Solution &solution) const;
   std::vector<Index> metricsPartitionDegree(const Solution &solution) const;
   std::vector<Index> metricsPartitionDaisyChainDegree(const Solution &solution) const;

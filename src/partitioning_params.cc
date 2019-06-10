@@ -25,6 +25,8 @@ std::istream &operator>>(std::istream &is, ObjectiveType &obj) {
     obj = ObjectiveType::RatioCut;
   else if (token == "ratio-soed")
     obj = ObjectiveType::RatioSoed;
+  else if (token == "ratio-max-degree")
+    obj = ObjectiveType::RatioMaxDegree;
   else
     is.setstate(std::ios_base::failbit);
   return is;
@@ -52,6 +54,9 @@ std::ostream &operator<<(std::ostream &os, const ObjectiveType &obj) {
       break;
     case ObjectiveType::RatioSoed:
       os << "ratio-soed";
+      break;
+    case ObjectiveType::RatioMaxDegree:
+      os << "ratio-max-degree";
       break;
   }
   return os;

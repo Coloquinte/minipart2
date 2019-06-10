@@ -24,14 +24,14 @@ class IncrementalObjective {
 
   const Hypergraph &hypergraph() const { return hypergraph_; }
   const Solution& solution() const { return solution_; }
-  const std::vector<double>& objectives() const { return objectives_; }
+  const std::vector<int64_t>& objectives() const { return objectives_; }
 
   virtual ~IncrementalObjective() {}
 
  protected:
   const Hypergraph &hypergraph_;
   Solution &solution_;
-  std::vector<double> objectives_;
+  std::vector<int64_t> objectives_;
 };
 
 class IncrementalCut final : public IncrementalObjective {
@@ -152,6 +152,24 @@ class IncrementalRatioSoed final : public IncrementalObjective {
   Index currentCut_;
   Index currentSoed_;
 };
+
+class IncrementalRatioMaxDegree final : public IncrementalObjective {
+ public:
+  IncrementalRatioMaxDegree(const Hypergraph &hypergraph, Solution &solution);
+  void move(Index node, Index to) override;
+  void checkConsistency() const override;
+
+ private:
+  void setObjective();
+
+ private:
+  std::vector<Index> partitionDemands_;
+  std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
+  std::vector<Index> hedgeDegrees_;
+  std::vector<Index> partitionDegrees_;
+  Index currentSoed_;
+};
+
 
 } // End namespace minipart
 
