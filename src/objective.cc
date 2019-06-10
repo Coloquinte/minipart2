@@ -63,15 +63,15 @@ vector<int64_t> DaisyChainMaxDegreeObjective::eval(const Hypergraph &h, Solution
 }
 
 vector<int64_t> RatioCutObjective::eval(const Hypergraph &h, Solution &s) const {
-  return { (int64_t) h.metricsRatioCut(s), h.metricsCut(s), h.metricsConnectivity(s) };
+  return { h.metricsEmptyPartitions(s), (int64_t) h.metricsRatioCut(s), h.metricsCut(s), h.metricsConnectivity(s) };
 }
 
 vector<int64_t> RatioSoedObjective::eval(const Hypergraph &h, Solution &s) const {
-  return { (int64_t) h.metricsRatioSoed(s), h.metricsConnectivity(s) };
+  return { h.metricsEmptyPartitions(s), (int64_t) h.metricsRatioSoed(s), h.metricsConnectivity(s) };
 }
 
 vector<int64_t> RatioMaxDegreeObjective::eval(const Hypergraph &h, Solution &s) const {
-  return { (int64_t) h.metricsRatioMaxDegree(s), h.metricsConnectivity(s) };
+  return { h.metricsEmptyPartitions(s), (int64_t) h.metricsRatioMaxDegree(s), h.metricsConnectivity(s) };
 }
 
 } // End namespace minipart

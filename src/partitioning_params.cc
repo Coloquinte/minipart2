@@ -62,5 +62,13 @@ std::ostream &operator<<(std::ostream &os, const ObjectiveType &obj) {
   return os;
 }
 
+bool PartitioningParams::isRatioObj() const {
+  return objective == ObjectiveType::RatioCut || objective == ObjectiveType::RatioSoed || objective == ObjectiveType::RatioMaxDegree;
+}
+
+bool PartitioningParams::isDaisyChainObj() const {
+  return objective == ObjectiveType::DaisyChainMaxDegree || objective == ObjectiveType::DaisyChainDistance;
+}
+
 } // End namespace minipart
 

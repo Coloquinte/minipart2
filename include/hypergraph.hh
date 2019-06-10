@@ -29,6 +29,7 @@ class Hypergraph {
 
   // Metrics
   Index metricsSumOverflow(const Solution &solution) const;
+  Index metricsEmptyPartitions(const Solution &solution) const;
   Index metricsCut(const Solution &solution) const;
   Index metricsSoed(const Solution &solution) const;
   Index metricsConnectivity(const Solution &solution) const;

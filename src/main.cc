@@ -149,41 +149,56 @@ void report(const PartitioningParams &, const Hypergraph &hg) {
   cout << endl;
 }
 
-void report(const PartitioningParams &params, const Hypergraph &hg, const Solution &sol) {
-  bool isRatioObj = params.objective == ObjectiveType::RatioCut || params.objective == ObjectiveType::RatioSoed || params.objective == ObjectiveType::RatioMaxDegree;
-  bool isDaisyChainObj = params.objective == ObjectiveType::DaisyChainMaxDegree || params.objective == ObjectiveType::DaisyChainDistance;
+void reportMainMetrics(const PartitioningParams &params, const Hypergraph &hg, const Solution &sol) {
   cout << "Cut: " << hg.metricsCut(sol) << endl;
   if (hg.nParts() > 2) {
     cout << "Connectivity: " << hg.metricsConnectivity(sol) << endl;
     cout << "Maximum degree: " << hg.metricsMaxDegree(sol) << endl;
   }
-  if (isDaisyChainObj) {
+  if (params.isDaisyChainObj()) {
     if (hg.nParts() > 2) {
       cout << "Daisy-chain distance: " << hg.metricsDaisyChainDistance(sol) << endl;
       cout << "Daisy-chain maximum degree: " << hg.metricsDaisyChainMaxDegree(sol) << endl;
     }
   }
-  if (isRatioObj) {
+  if (params.isRatioObj()) {
     cout << "Ratio cut: " << hg.metricsRatioCut(sol) << endl;
     if (hg.nParts() > 2) {
       cout << "Ratio connectivity: " << hg.metricsRatioConnectivity(sol) << endl;
       cout << "Ratio maximum degree: " << hg.metricsRatioMaxDegree(sol) << endl;
     }
-    cout << "Ratio penalty: " << hg.metricsRatioPenalty(sol) << endl;
+    cout << "Ratio penalty: " << 100.0 * (hg.metricsRatioPenalty(sol) - 1.0) << "%" << endl;
   }
   cout << endl;
+}
 
+void reportPartitionUsage(const PartitioningParams &params, const Hypergraph &hg, const Solution &sol) {
   std::vector<Index> usage  = hg.metricsPartitionUsage(sol);
-  cout << "Partition usage:" << endl;
-  for (Index p = 0; p < hg.nParts(); ++p) {
-    cout << "\tPart#" << p << "  \t";
-    cout << usage[p] << "\t/ " << hg.partWeight(p) << "\t";
-    cout << "(" << 100.0 * usage[p] / hg.partWeight(p) << "%)\t";
-    if (usage[p] > hg.partWeight(p)) cout << "(overflow)";
+  if (params.isRatioObj()) {
+    Index totNodeWeight = hg.totalNodeWeight();
+    cout << "Partition usage:" << endl;
+    for (Index p = 0; p < hg.nParts(); ++p) {
+      cout << "\tPart#" << p << "  \t";
+      cout << usage[p] << "\t";
+      cout << "(" << 100.0 * usage[p] / totNodeWeight << "%)";
+      cout << endl;
+    }
     cout << endl;
   }
-  cout << endl;
+  else {
+    cout << "Partition usage:" << endl;
+    for (Index p = 0; p < hg.nParts(); ++p) {
+      cout << "\tPart#" << p << "  \t";
+      cout << usage[p] << "\t/ " << hg.partWeight(p) << "\t";
+      cout << "(" << 100.0 * usage[p] / hg.partWeight(p) << "%)\t";
+      if (usage[p] > hg.partWeight(p)) cout << "(overflow)";
+      cout << endl;
+    }
+    cout << endl;
+  }
+}
 
+void reportPartitionDegree(const PartitioningParams &params, const Hypergraph &hg, const Solution &sol) {
   if (hg.nParts() <= 2) return;
 
   std::vector<Index> degree = hg.metricsPartitionDegree(sol);
@@ -192,7 +207,7 @@ void report(const PartitioningParams &params, const Hypergraph &hg, const Soluti
     cout << "\tPart#" << p << "  \t";
     cout << degree[p] << endl;
   }
-  if (params.objective == ObjectiveType::DaisyChainMaxDegree || params.objective == ObjectiveType::DaisyChainDistance) {
+  if (params.isDaisyChainObj()) {
     cout << endl;
     cout << "Daisy-chain partition degrees: " << endl;
     degree = hg.metricsPartitionDaisyChainDegree(sol);
@@ -201,6 +216,12 @@ void report(const PartitioningParams &params, const Hypergraph &hg, const Soluti
       cout << degree[p] << endl;
     }
   }
+}
+
+void report(const PartitioningParams &params, const Hypergraph &hg, const Solution &sol) {
+  reportMainMetrics(params, hg, sol);
+  reportPartitionUsage(params, hg, sol);
+  reportPartitionDegree(params, hg, sol);
 }
 
 unique_ptr<Objective> readObjective(const po::variables_map &vm) {

@@ -60,8 +60,8 @@ enum class ObjectiveType {
   RatioMaxDegree
 };
 
-std::istream & operator>>(std::istream &, ObjectiveType &);
-std::ostream & operator<<(std::ostream &, const ObjectiveType &);
+std::istream & operator>>(std::istream &, ObjectiveType&);
+std::ostream & operator<<(std::ostream &, const ObjectiveType&);
 
 struct PartitioningParams {
   int verbosity;
@@ -85,6 +85,9 @@ struct PartitioningParams {
   Index nHedges;
   Index nPins;
   Index nParts;
+
+  bool isRatioObj() const;
+  bool isDaisyChainObj() const;
 };
 
 } // End namespace minipart

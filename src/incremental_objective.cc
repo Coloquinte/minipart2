@@ -117,6 +117,14 @@ Index computeSumOverflow(const Hypergraph &hypergraph, const vector<Index> &part
   return ret;
 }
 
+Index countEmptyPartitions(const Hypergraph &hypergraph, const vector<Index> &partitionDemands) {
+  Index count = 0;
+  for (Index d : partitionDemands) {
+    if (d == 0) count++;
+  }
+  return count;
+}
+
 double computeRatioPenalty(const Hypergraph &hypergraph, const vector<Index> &partitionDemands) {
   Index sumDemands = 0;
   for (Index d : partitionDemands)
@@ -195,7 +203,7 @@ IncrementalDaisyChainMaxDegree::IncrementalDaisyChainMaxDegree(const Hypergraph 
 }
 
 IncrementalRatioCut::IncrementalRatioCut(const Hypergraph &hypergraph, Solution &solution)
-: IncrementalObjective(hypergraph, solution, 3) {
+: IncrementalObjective(hypergraph, solution, 4) {
   partitionDemands_ = computePartitionDemands(hypergraph, solution);
   hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition(hypergraph, solution);
   hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
@@ -205,7 +213,7 @@ IncrementalRatioCut::IncrementalRatioCut(const Hypergraph &hypergraph, Solution 
 }
 
 IncrementalRatioSoed::IncrementalRatioSoed(const Hypergraph &hypergraph, Solution &solution)
-: IncrementalObjective(hypergraph, solution, 2) {
+: IncrementalObjective(hypergraph, solution, 3) {
   partitionDemands_ = computePartitionDemands(hypergraph, solution);
   hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition(hypergraph, solution);
   hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
@@ -214,7 +222,7 @@ IncrementalRatioSoed::IncrementalRatioSoed(const Hypergraph &hypergraph, Solutio
 }
 
 IncrementalRatioMaxDegree::IncrementalRatioMaxDegree(const Hypergraph &hypergraph, Solution &solution)
-: IncrementalObjective(hypergraph, solution, 2) {
+: IncrementalObjective(hypergraph, solution, 3) {
   partitionDemands_ = computePartitionDemands(hypergraph, solution);
   hedgeNbPinsPerPartition_ = computeHedgeNbPinsPerPartition(hypergraph, solution);
   hedgeDegrees_ = computeHedgeDegrees(hypergraph, hedgeNbPinsPerPartition_);
@@ -315,19 +323,22 @@ void IncrementalDaisyChainMaxDegree::setObjective() {
 }
 
 void IncrementalRatioCut::setObjective() {
-  objectives_[0] = currentCut_ * computeRatioPenalty(hypergraph_, partitionDemands_);
-  objectives_[1] = currentCut_;
-  objectives_[2] = currentSoed_;
+  objectives_[0] = countEmptyPartitions(hypergraph_, partitionDemands_);
+  objectives_[1] = currentCut_ * computeRatioPenalty(hypergraph_, partitionDemands_);
+  objectives_[2] = currentCut_;
+  objectives_[3] = currentSoed_;
 }
 
 void IncrementalRatioSoed::setObjective() {
-  objectives_[0] = currentSoed_ * computeRatioPenalty(hypergraph_, partitionDemands_);
-  objectives_[1] = currentSoed_;
+  objectives_[0] = countEmptyPartitions(hypergraph_, partitionDemands_);
+  objectives_[1] = currentSoed_ * computeRatioPenalty(hypergraph_, partitionDemands_);
+  objectives_[2] = currentSoed_;
 }
 
 void IncrementalRatioMaxDegree::setObjective() {
-  objectives_[0] = computeMaxDegree(hypergraph_, partitionDegrees_) * computeRatioPenalty(hypergraph_, partitionDemands_);
-  objectives_[1] = currentSoed_;
+  objectives_[0] = countEmptyPartitions(hypergraph_, partitionDemands_);
+  objectives_[1] = computeMaxDegree(hypergraph_, partitionDegrees_) * computeRatioPenalty(hypergraph_, partitionDemands_);
+  objectives_[2] = currentSoed_;
 }
 
 void IncrementalCut::move(Index node, Index to) {

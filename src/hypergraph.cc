@@ -272,6 +272,14 @@ double Hypergraph::metricsRatioPenalty(const Solution &solution) const {
   return 1.0 / productUsage;
 }
 
+Index Hypergraph::metricsEmptyPartitions(const Solution &solution) const {
+  vector<Index> partitionUsage = metricsPartitionUsage(solution);
+  Index count = 0;
+  for (Index d : partitionUsage) {
+    if (d == 0) count++;
+  }
+  return count;
+}
 double Hypergraph::metricsRatioCut(const Solution &solution) const {
   return metricsCut(solution) * metricsRatioPenalty(solution);
 }
