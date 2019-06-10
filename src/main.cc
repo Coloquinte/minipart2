@@ -17,7 +17,7 @@ using namespace minipart;
 namespace po = boost::program_options;
 
 po::options_description getBaseOptions() {
-  po::options_description desc("Minipart options");
+  po::options_description desc("Options");
 
   desc.add_options()("input,i", po::value<string>(),
                      "Input file name (.hgr)");
@@ -42,11 +42,13 @@ po::options_description getBaseOptions() {
 
   desc.add_options()("help,h", "Print this help");
 
+  desc.add_options()("version", "Show the program version");
+
   return desc;
 }
 
 po::options_description getBlackboxOptions() {
-  po::options_description desc("Algorithm options");
+  po::options_description desc("Algorithm parameters");
 
   desc.add_options()("pool-size", po::value<Index>()->default_value(32),
                      "Number of solutions");
@@ -90,7 +92,14 @@ po::variables_map parseArguments(int argc, char **argv) {
   }
 
   if (vm.count("help")) {
+    cout << "Minipart " << MINIPART_VERSION_NUMBER << endl;
     cout << allOptions << endl;
+    exit(0);
+  }
+  if (vm.count("version")) {
+    cout << "Minipart-" << MINIPART_VERSION_NUMBER << "@" << MINIPART_BUILD_DATE << endl;
+    cout << "Version " << MINIPART_VERSION_NUMBER << endl;
+    cout << "Built " << MINIPART_BUILD_DATE << endl;
     exit(0);
   }
   if (!vm.count("input")) {
