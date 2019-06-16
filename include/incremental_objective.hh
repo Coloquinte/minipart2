@@ -97,6 +97,7 @@ class IncrementalDaisyChainDistance final : public IncrementalObjective {
   std::vector<Index> partitionDemands_;
   std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
   std::vector<Index> hedgeDegrees_;
+  std::vector<std::pair<Index, Index> > hedgeMinMax_;
   Index currentDistance_;
   Index currentSoed_;
 };
@@ -115,6 +116,7 @@ class IncrementalDaisyChainMaxDegree final : public IncrementalObjective {
   std::vector<Index> partitionDemands_;
   std::vector<std::vector<Index> > hedgeNbPinsPerPartition_;
   std::vector<Index> hedgeDegrees_;
+  std::vector<std::pair<Index, Index> > hedgeMinMax_;
   std::vector<Index> partitionDegrees_;
   Index currentDistance_;
 };

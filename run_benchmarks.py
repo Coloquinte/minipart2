@@ -8,7 +8,7 @@ import multiprocessing
 import pandas as pd
 
 MinipartParams  = namedtuple("MinipartParams", ["bench", "version", "partitions", "imbalance", "objective", "v_cycles", "pool_size", "move_ratio", "seed"])
-MinipartResults = namedtuple("MinipartResults", ["cut", "connectivity", "max_degree"])
+MinipartResults = namedtuple("MinipartResults", ["cut", "connectivity", "max_degree", "daisy_chain_distance", "daisy_chain_max_degree"])
 MinipartData    = namedtuple("MinipartData", MinipartParams._fields + MinipartResults._fields)
 
 def extractParams(data):
@@ -27,6 +27,7 @@ def create_db():
             (bench text, version text, partitions integer, imbalance real, objective text,
               v_cycles integer, pool_size integer, move_ratio real, seed integer,
               cut integer, connectivity integer, max_degree integer,
+              daisy_chain_distance integer, daisy_chain_max_degree integer,
               UNIQUE (bench, version, partitions, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
             )
         ''')
@@ -44,9 +45,11 @@ def list_imbalance():
 
 def list_objective(nb_partitions):
     if nb_partitions > 2:
-        return ["cut", "soed", "max-degree"]
+        return ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
+        #return ["daisy-chain-distance", "daisy-chain-max-degree"]
     else:
         return ["cut"]
+        #return []
 
 def list_v_cycles():
     return [8]
@@ -62,7 +65,7 @@ def list_seeds():
 
 def list_params():
     params = []
-    version = "2019-05-05"
+    version = "2019-06-10"
     for seed in list_seeds():
       for partitions in list_partitions():
         for imbalance in list_imbalance():
@@ -112,6 +115,8 @@ def extract_metrics(output):
     cut = None
     connectivity = None
     max_degree = None
+    daisy_chain_distance = None
+    daisy_chain_max_degree = None
     for l in o.splitlines():
       spl = l.split(":")
       if len(spl) >= 2:
@@ -120,15 +125,15 @@ def extract_metrics(output):
         elif spl[0] == "Connectivity":
           connectivity = int(spl[1])
         elif spl[0] == "Maximum degree":
-          max_degree= int(spl[1])
+          max_degree = int(spl[1])
+        elif spl[0] == "Daisy-chain distance":
+          daisy_chain_distance = int(spl[1])
+        elif spl[0] == "Daisy-chain maximum degree":
+          daisy_chain_max_degree = int(spl[1])
     # Two partitions
-    if connectivity is None:
-      connectivity = cut
-    if max_degree is None:
-      max_degree = cut
     assert cut is not None
     assert (connectivity is not None) == (max_degree is not None)
-    return MinipartResults(cut, connectivity, max_degree)
+    return MinipartResults(cut, connectivity, max_degree, daisy_chain_distance, daisy_chain_max_degree)
 
 def run_benchmark(params):
     output = subprocess.check_output(["./minipart_bench",
@@ -144,9 +149,9 @@ def save_results(params, results):
     conn = sqlite3.connect("results.db")
     c = conn.cursor()
     data = params + results
-    assert len(data) == 12
+    assert len(data) == 14
     c.execute('''
-        INSERT INTO minipart values (?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT INTO minipart values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ''', data)
     conn.commit()
     c.close()
@@ -158,7 +163,7 @@ def run_benchmarks():
     pool = multiprocessing.Pool(8)
     pool.map(run_benchmark, params)
 
-def extract_dataframe(params_to_results, objective) :
+def extract_dataframe(params_to_results, objective):
     columns_params = [p for p in MinipartParams._fields if p not in ["seed", "objective"]]
     columns_results = ["nb_runs",
         "best_cut", "worst_cut", "average_cut",
@@ -195,6 +200,6 @@ def gather_results():
     cut_df = extract_dataframe(res, "max-degree")
     cut_df.to_csv("report_max-degree.csv", index=False)
 
-#run_benchmarks()
-gather_results()
+run_benchmarks()
+#gather_results()
 
