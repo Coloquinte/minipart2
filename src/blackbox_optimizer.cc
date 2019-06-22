@@ -15,7 +15,7 @@
 using namespace std;
 
 namespace minipart {
-BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const PartitioningParams &params, const Objective &objective, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level)
+BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const PartitioningParams &params, const Objective &objective, mt19937 &rgen, vector<Solution> &solutions, Index level)
 : hypergraph_(hypergraph)
 , params_(params)
 , objective_(objective)
@@ -80,9 +80,10 @@ void BlackboxOptimizer::reportEndSearch() const {
   }
 }
 
-Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const PartitioningParams &params, const Objective &objective) {
+Solution BlackboxOptimizer::run(const Hypergraph &hypergraph, const PartitioningParams &params, const Objective &objective, const vector<Solution> &solutions) {
   mt19937 rgen(params.seed);
-  vector<Solution> sols;
+  // Copy because modified in-place
+  vector<Solution> sols = solutions;
   BlackboxOptimizer opt(hypergraph, params, objective, rgen, sols, 0);
   return opt.run();
 }

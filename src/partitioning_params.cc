@@ -13,7 +13,7 @@ std::istream &operator>>(std::istream &is, ObjectiveType &obj) {
   is >> token;
   if (token == "cut")
     obj = ObjectiveType::Cut;
-  else if (token == "soed")
+  else if (token == "soed" || token == "connectivity")
     obj = ObjectiveType::Soed;
   else if (token == "max-degree")
     obj = ObjectiveType::MaxDegree;
@@ -23,7 +23,7 @@ std::istream &operator>>(std::istream &is, ObjectiveType &obj) {
     obj = ObjectiveType::DaisyChainMaxDegree;
   else if (token == "ratio-cut")
     obj = ObjectiveType::RatioCut;
-  else if (token == "ratio-soed")
+  else if (token == "ratio-soed" || token == "ratio-connectivity")
     obj = ObjectiveType::RatioSoed;
   else if (token == "ratio-max-degree")
     obj = ObjectiveType::RatioMaxDegree;

@@ -7,7 +7,7 @@
 #include <stdexcept>
 #include <unordered_set>
 #include <unordered_map>
-#include <iostream>
+#include <cmath>
 
 using namespace std;
 
@@ -269,7 +269,8 @@ double Hypergraph::metricsRatioPenalty(const Solution &solution) const {
   for (Index d : partitionUsage) {
     productUsage *= (d / normalizedUsage);
   }
-  return 1.0 / productUsage;
+  // Geomean squared
+  return 1.0 / pow(productUsage, 2.0 / partitionUsage.size());
 }
 
 Index Hypergraph::metricsEmptyPartitions(const Solution &solution) const {

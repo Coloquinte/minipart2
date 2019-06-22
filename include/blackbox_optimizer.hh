@@ -11,7 +11,7 @@ namespace minipart {
 
 class BlackboxOptimizer {
  public:
-  static Solution run(const Hypergraph &hypergraph, const PartitioningParams &params, const Objective &objective);
+  static Solution run(const Hypergraph &hypergraph, const PartitioningParams &params, const Objective &objective, const std::vector<Solution> &solutions);
 
  private:
   BlackboxOptimizer(const Hypergraph &hypergraph, const PartitioningParams &params, const Objective &objective, std::mt19937 &rgen, std::vector<Solution> &solutions, Index level);

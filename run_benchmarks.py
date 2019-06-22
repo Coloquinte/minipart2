@@ -45,11 +45,11 @@ def list_imbalance():
 
 def list_objective(nb_partitions):
     if nb_partitions > 2:
-        return ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
-        #return ["daisy-chain-distance", "daisy-chain-max-degree"]
+        #return ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
+        return ["daisy-chain-distance", "daisy-chain-max-degree"]
     else:
-        return ["cut"]
-        #return []
+        #return ["cut"]
+        return []
 
 def list_v_cycles():
     return [8]
@@ -110,7 +110,7 @@ def filter_new_params(params):
         new_params.append(p)
     return new_params
 
-def extract_metrics(output):
+def extract_metrics_minipart(output):
     o = output.decode("utf-8")
     cut = None
     connectivity = None
@@ -130,18 +130,17 @@ def extract_metrics(output):
           daisy_chain_distance = int(spl[1])
         elif spl[0] == "Daisy-chain maximum degree":
           daisy_chain_max_degree = int(spl[1])
-    # Two partitions
     assert cut is not None
     assert (connectivity is not None) == (max_degree is not None)
     return MinipartResults(cut, connectivity, max_degree, daisy_chain_distance, daisy_chain_max_degree)
 
-def run_benchmark(params):
+def run_benchmark_minipart(params):
     output = subprocess.check_output(["./minipart_bench",
-        "--input", "data/" + params.bench + ".hgr", "--partitions", str(params.partitions),
+        "--hypergraph", "data/" + params.bench + ".hgr", "--partitions", str(params.partitions),
         "--imbalance", str(params.imbalance), "--objective", params.objective,
         "--v-cycles", str(params.v_cycles), "--pool-size", str(params.pool_size), "--move-ratio", str(params.move_ratio),
         "--seed", str(params.seed)])
-    results = extract_metrics(output)
+    results = extract_metrics_minipart(output)
     save_results(params, results)
     return results
 
@@ -161,7 +160,7 @@ def run_benchmarks():
     params = list_params()
     params = filter_new_params(params)
     pool = multiprocessing.Pool(8)
-    pool.map(run_benchmark, params)
+    pool.map(run_benchmark_minipart, params)
 
 def extract_dataframe(params_to_results, objective):
     columns_params = [p for p in MinipartParams._fields if p not in ["seed", "objective"]]

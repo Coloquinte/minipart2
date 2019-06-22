@@ -19,11 +19,14 @@ namespace po = boost::program_options;
 po::options_description getBaseOptions() {
   po::options_description desc("Options");
 
-  desc.add_options()("input,i", po::value<string>(),
+  desc.add_options()("hypergraph,i", po::value<string>(),
                      "Input file name (.hgr)");
 
-  desc.add_options()("output,o", po::value<string>(),
+  desc.add_options()("solution,o", po::value<string>(),
                      "Solution file");
+
+  desc.add_options()("initial,f", po::value<string>(),
+                     "Initial solution file");
 
   desc.add_options()("partitions,k", po::value<Index>()->default_value(2),
                      "Number of partitions");
@@ -71,15 +74,25 @@ po::options_description getBlackboxOptions() {
   return desc;
 }
 
+po::options_description getHiddenOptions() {
+  po::options_description desc("Hidden options");
+  desc.add_options()("no-solve", "Skip the solving phase");
+  return desc;
+}
+
 po::variables_map parseArguments(int argc, char **argv) {
   cout << fixed << setprecision(1);
   cerr << fixed << setprecision(1);
 
   po::options_description baseOptions = getBaseOptions();
   po::options_description blackboxOptions = getBlackboxOptions();
+  po::options_description hiddenOptions = getHiddenOptions();
 
+  po::options_description visibleOptions;
+  visibleOptions.add(baseOptions).add(blackboxOptions);
   po::options_description allOptions;
-  allOptions.add(baseOptions).add(blackboxOptions);
+  allOptions.add(baseOptions).add(blackboxOptions).add(hiddenOptions);
+
   po::variables_map vm;
   try {
     po::store(po::parse_command_line(argc, argv, allOptions), vm);
@@ -87,13 +100,13 @@ po::variables_map parseArguments(int argc, char **argv) {
   } catch (po::error &e) {
     cerr << "Error parsing command line arguments: ";
     cerr << e.what() << endl << endl;
-    cout << allOptions << endl;
+    cout << visibleOptions << endl;
     exit(1);
   }
 
   if (vm.count("help")) {
     cout << "Minipart " << MINIPART_VERSION_NUMBER << endl;
-    cout << allOptions << endl;
+    cout << visibleOptions << endl;
     exit(0);
   }
   if (vm.count("version")) {
@@ -102,9 +115,9 @@ po::variables_map parseArguments(int argc, char **argv) {
     cout << "Built " << MINIPART_BUILD_DATE << endl;
     exit(0);
   }
-  if (!vm.count("input")) {
+  if (!vm.count("hypergraph")) {
     cout << "Missing input file" << endl << endl;
-    cout << allOptions << endl;
+    cout << visibleOptions << endl;
     exit(1);
   }
 
@@ -112,7 +125,7 @@ po::variables_map parseArguments(int argc, char **argv) {
 }
 
 Hypergraph readHypergraph(const po::variables_map &vm) {
-  ifstream f(vm["input"].as<string>());
+  ifstream f(vm["hypergraph"].as<string>());
   Hypergraph hg = Hypergraph::readHgr(f);
   hg.checkConsistency();
   hg.mergeParallelHedges();
@@ -139,6 +152,24 @@ PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg)
     .nPins = hg.nPins(),
     .nParts = hg.nParts()
   };
+}
+
+vector<Solution> readInitialSolutions(const po::variables_map &vm, const Hypergraph &hg) {
+  vector<Solution> solutions;
+  if (vm.count("initial")) {
+    ifstream f(vm["initial"].as<string>());
+    Solution sol = Solution::read(f);
+    sol.checkConsistency();
+    solutions.emplace_back(sol);
+  }
+  return solutions;
+}
+
+void writeFinalSolution(const po::variables_map &vm, const Solution &solution) {
+  if (vm.count("solution")) {
+    ofstream os(vm["solution"].as<string>());
+    solution.write(os);
+  }
 }
 
 void report(const PartitioningParams &, const Hypergraph &hg) {
@@ -248,30 +279,40 @@ unique_ptr<Objective> readObjective(const po::variables_map &vm) {
   }
 }
 
+void initialReport(const Hypergraph &hg, const PartitioningParams &params, const vector<Solution> &initialSolutions) {
+  if (params.verbosity >= 1) {
+    report(params, hg);
+    if (initialSolutions.size() > 0) {
+      cout << "Initial solution:" << endl;
+    }
+    for (const Solution &sol : initialSolutions) {
+      report(params, hg, sol);
+    }
+  }
+}
+
+void finalReport(const Hypergraph &hg, const PartitioningParams &params, const vector<Solution> &finalSolutions) {
+  if (params.verbosity >= 1) {
+    for (const Solution &sol : finalSolutions) {
+      report(params, hg, sol);
+    }
+  }
+}
+
 int main(int argc, char **argv) {
   po::variables_map vm = parseArguments(argc, argv);
 
   Hypergraph hg = readHypergraph(vm);
   PartitioningParams params = readParams(vm, hg);
   unique_ptr<Objective> objectivePtr = readObjective(vm);
+  vector<Solution> initialSolutions = readInitialSolutions(vm, hg);
 
-  if (params.verbosity >= 1) {
-    report(params, hg);
-  }
-  Solution sol = BlackboxOptimizer::run(hg, params, *objectivePtr);
+  initialReport(hg, params, initialSolutions);
+  if (vm.count("no-solve")) return 0;
 
-  if (params.verbosity >= 2) {
-    report(params, hg);
-  }
-  if (params.verbosity >= 1) {
-    report(params, hg, sol);
-  }
-
-  if (vm.count("output")) {
-    ofstream os(vm["output"].as<string>());
-    sol.write(os);
-  }
-
+  Solution solution = BlackboxOptimizer::run(hg, params, *objectivePtr, initialSolutions);
+  finalReport(hg, params, {solution});
+  writeFinalSolution(vm, solution);
   return 0;
 }
 

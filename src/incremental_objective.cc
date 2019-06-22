@@ -4,6 +4,7 @@
 
 #include <cassert>
 #include <algorithm>
+#include <cmath>
 
 using namespace std;
 
@@ -138,7 +139,8 @@ double computeRatioPenalty(const Hypergraph &hypergraph, const vector<Index> &pa
   for (Index d : partitionDemands) {
     productDemands *= (d / normalizedDemands);
   }
-  return 1.0 / productDemands;
+  // Geomean squared
+  return 1.0 / pow(productDemands, 2.0 / partitionDemands.size());
 }
 
 Index computeMaxDegree(const Hypergraph &, const vector<Index> &partitionDegrees) {
