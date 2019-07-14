@@ -54,7 +54,7 @@ po::options_description getBlackboxOptions() {
   desc.add_options()("pool-size", po::value<Index>()->default_value(32),
                      "Number of solutions");
 
-  desc.add_options()("v-cycles", po::value<Index>()->default_value(5),
+  desc.add_options()("v-cycles", po::value<Index>()->default_value(1),
                      "Number of V-cycles");
 
   desc.add_options()("min-c-factor", po::value<double>()->default_value(1.2),
@@ -66,7 +66,7 @@ po::options_description getBlackboxOptions() {
   desc.add_options()("min-c-nodes", po::value<Index>()->default_value(50),
                      "Minimum nodes per partition for coarsening");
 
-  desc.add_options()("move-ratio", po::value<double>()->default_value(5.0),
+  desc.add_options()("move-ratio", po::value<double>()->default_value(8.0),
                      "Number of moves per vertex");
 
   return desc;
