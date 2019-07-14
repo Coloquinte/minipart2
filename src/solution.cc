@@ -21,12 +21,18 @@ Solution::Solution(std::vector<Index> parts) {
   nParts_ = *max_element(parts_.begin(), parts_.end()) + 1;
 }
 
+void Solution::resizeParts(Index parts) {
+  if (parts < nParts_)
+    throw runtime_error("It is only possible to increase the number of blocks");
+  nParts_ = parts;
+}
+
 void Solution::checkConsistency() const {
   for (Index p : parts_) {
     if (p < 0)
-      throw runtime_error("Partition numbers must be non-negative");
+      throw runtime_error("Block numbers must be non-negative");
     if (p >= nParts())
-      throw runtime_error("Partition numbers must be smaller than the number of partitions");
+      throw runtime_error("Block numbers must be smaller than the number of blocks");
   }
 }
 

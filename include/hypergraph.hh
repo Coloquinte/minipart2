@@ -54,7 +54,7 @@ class Hypergraph {
   Hypergraph coarsen(const Solution &coarsening) const;
 
   // Modifications
-  void setupPartitions(Index nParts, double imbalanceFactor);
+  void setupBlocks(Index nParts, double imbalanceFactor);
   void mergeParallelHedges();
 
   void checkConsistency() const; 

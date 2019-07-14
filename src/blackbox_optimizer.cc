@@ -25,8 +25,7 @@ BlackboxOptimizer::BlackboxOptimizer(const Hypergraph &hypergraph, const Partiti
 }
 
 void BlackboxOptimizer::runInitialPlacement() {
-  solutions_.clear();
-  for (Index i = 0; i < params_.nSolutions; ++i) {
+  while ((Index) solutions_.size() < params_.nSolutions) {
     uniform_int_distribution<int> partDist(0, hypergraph_.nParts()-1);
     Solution solution(hypergraph_.nNodes(), hypergraph_.nParts());
     for (Index i = 0; i < hypergraph_.nNodes(); ++i) {

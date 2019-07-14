@@ -28,8 +28,8 @@ po::options_description getBaseOptions() {
   desc.add_options()("initial,f", po::value<string>(),
                      "Initial solution file");
 
-  desc.add_options()("partitions,k", po::value<Index>()->default_value(2),
-                     "Number of partitions");
+  desc.add_options()("blocks,k", po::value<Index>()->default_value(2),
+                     "Number of blocks");
 
   desc.add_options()("imbalance,e", po::value<double>()->default_value(5.0),
                      "Imbalance factor (%)");
@@ -129,8 +129,8 @@ Hypergraph readHypergraph(const po::variables_map &vm) {
   Hypergraph hg = Hypergraph::readHgr(f);
   hg.checkConsistency();
   hg.mergeParallelHedges();
-  hg.setupPartitions(
-    vm["partitions"].as<Index>(),
+  hg.setupBlocks(
+    vm["blocks"].as<Index>(),
     vm["imbalance"].as<double>() / 100.0
   );
   return hg;
@@ -161,6 +161,13 @@ vector<Solution> readInitialSolutions(const po::variables_map &vm, const Hypergr
     Solution sol = Solution::read(f);
     sol.checkConsistency();
     solutions.emplace_back(sol);
+  }
+  for (Solution &sol : solutions) {
+    if (sol.nParts() > hg.nParts()) {
+      cerr << "The initial solution has more blocks than specified" << endl;
+      exit(1);
+    }
+    sol.resizeParts(hg.nParts());
   }
   return solutions;
 }

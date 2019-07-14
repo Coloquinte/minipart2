@@ -22,6 +22,8 @@ class Solution {
   Solution coarsen(const Solution &coarsening) const;
   Solution uncoarsen(const Solution &coarsening) const;
 
+  void resizeParts(Index parts);
+
   // IO functions
   static Solution read(std::istream &);
   void write(std::ostream &) const;

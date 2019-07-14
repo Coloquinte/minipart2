@@ -178,7 +178,7 @@ void Hypergraph::mergeParallelHedges() {
   constructNodes();
 }
 
-void Hypergraph::setupPartitions(Index nParts, double imbalanceFactor) {
+void Hypergraph::setupBlocks(Index nParts, double imbalanceFactor) {
   if (nParts > 0) {
     Index totalCapacity = totalNodeWeight() * (1.0 + imbalanceFactor);
     Index partitionCapacity = totalCapacity  / nParts;

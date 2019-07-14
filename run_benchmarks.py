@@ -7,7 +7,7 @@ import subprocess
 import multiprocessing
 import pandas as pd
 
-MinipartParams  = namedtuple("MinipartParams", ["bench", "version", "partitions", "imbalance", "objective", "v_cycles", "pool_size", "move_ratio", "seed"])
+MinipartParams  = namedtuple("MinipartParams", ["bench", "solver", "blocks", "imbalance", "objective", "v_cycles", "pool_size", "move_ratio", "seed"])
 MinipartResults = namedtuple("MinipartResults", ["cut", "connectivity", "max_degree", "daisy_chain_distance", "daisy_chain_max_degree"])
 MinipartData    = namedtuple("MinipartData", MinipartParams._fields + MinipartResults._fields)
 
@@ -24,11 +24,11 @@ def create_db():
     c = conn.cursor()
     c.execute('''
         CREATE TABLE IF NOT EXISTS minipart 
-            (bench text, version text, partitions integer, imbalance real, objective text,
+            (bench text, solver text, blocks integer, imbalance real, objective text,
               v_cycles integer, pool_size integer, move_ratio real, seed integer,
               cut integer, connectivity integer, max_degree integer,
               daisy_chain_distance integer, daisy_chain_max_degree integer,
-              UNIQUE (bench, version, partitions, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
+              UNIQUE (bench, solver, blocks, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
             )
         ''')
     conn.commit()
@@ -37,52 +37,52 @@ def create_db():
 def list_benchs():
     return [ "ibm%02d" % (i,) for i in range(1,19)]
 
-def list_partitions():
-    return [2, 3, 4]
+def list_params_minipart():
+    params = []
+    solver = "minipart"
+    seed_opts = range(1, 7)
+    for seed in seed_opts:
+      blocks_opts = range(2, 5)
+      for blocks in blocks_opts:
+        imbalance_opts = [0.05,]
+        for imbalance in imbalance_opts:
+          objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
+          #objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
+          for objective in objective_opts:
+            for v_cycles in [1,]:
+              for pool_size in [32,]:
+                for move_ratio in [8.0,]:
+                  for bench in list_benchs():
+                    cur = MinipartParams(bench, solver, blocks, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
+                    params.append(cur)
+    return params
 
-def list_imbalance():
-    return [5]
-
-def list_objective(nb_partitions):
-    if nb_partitions > 2:
-        #return ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
-        return ["daisy-chain-distance", "daisy-chain-max-degree"]
-    else:
-        #return ["cut"]
-        return []
-
-def list_v_cycles():
-    return [8]
-
-def list_pool_size():
-    return [32]
-
-def list_move_ratio():
-    return [8]
-
-def list_seeds():
-    return [1,2,3,4,5,6]
+def list_params_kahypar():
+    params = []
+    solver = "kahypar"
+    seed_opts = range(1, 7)
+    v_cycles = 1
+    for seed in seed_opts:
+      blocks_opts = range(2, 5)
+      for blocks in blocks_opts:
+        imbalance_opts = [0.05,]
+        for imbalance in imbalance_opts:
+          objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
+          #objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
+          for objective in objective_opts:
+            for bench in list_benchs():
+              cur = MinipartParams(bench, solver, blocks, imbalance, objective, 1, None, None, seed)
+              params.append(cur)
+    return params
 
 def list_params():
-    params = []
-    version = "2019-06-10"
-    for seed in list_seeds():
-      for partitions in list_partitions():
-        for imbalance in list_imbalance():
-          for objective in list_objective(partitions):
-            for v_cycles in list_v_cycles():
-              for pool_size in list_pool_size():
-                for move_ratio in list_move_ratio():
-                  for bench in list_benchs():
-                      cur = MinipartParams(bench, version, partitions, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
-                      params.append(cur)
-    return params
+    return list_params_minipart()
 
 def get_params_result(params):
     conn = sqlite3.connect("results.db")
     c = conn.cursor()
     c.execute('''SELECT * FROM minipart
-      WHERE bench=? and version=? and partitions=? and imbalance=?
+      WHERE bench=? and solver=? and blocks=? and imbalance=?
       and objective=? and v_cycles=? and pool_size=?
       and move_ratio=? and seed=?''', params)
     res = c.fetchall()
@@ -92,11 +92,11 @@ def get_params_result(params):
     else:
       return MinipartData(*res[0])
 
-def get_version_results(version):
+def get_solver_results(solver):
     conn = sqlite3.connect("results.db")
     c = conn.cursor()
     c.execute('''SELECT * FROM minipart
-      WHERE version=?''', (version,) )
+      WHERE solver=?''', (solver,) )
     res = c.fetchall()
     return [MinipartData(*r) for r in res]
 
@@ -134,15 +134,59 @@ def extract_metrics_minipart(output):
     assert (connectivity is not None) == (max_degree is not None)
     return MinipartResults(cut, connectivity, max_degree, daisy_chain_distance, daisy_chain_max_degree)
 
+def compute_filename(params):
+    name = "solutions/output_"  + params.bench
+    name += "_" + str(params.solver)
+    name += "_k" + str(params.blocks)
+    name += "_e" + str(params.imbalance)
+    name += "_" + params.objective
+    if params.v_cycles is not None:
+      name += "_vcycles" + str(params.v_cycles)
+    if params.pool_size is not None:
+      name += "_pool" + str(params.pool_size)
+    if params.move_ratio is not None:
+      name += "_ratio" + str(params.move_ratio)
+    name += "_s" + str(params.seed)
+    name += ".sol"
+    return name
+
 def run_benchmark_minipart(params):
     output = subprocess.check_output(["./minipart_bench",
-        "--hypergraph", "data/" + params.bench + ".hgr", "--partitions", str(params.partitions),
-        "--imbalance", str(params.imbalance), "--objective", params.objective,
-        "--v-cycles", str(params.v_cycles), "--pool-size", str(params.pool_size), "--move-ratio", str(params.move_ratio),
-        "--seed", str(params.seed)])
-    results = extract_metrics_minipart(output)
-    save_results(params, results)
-    return results
+        "-i", "data/" + params.bench + ".hgr",
+        "-k", str(params.blocks),
+        "-e", str(params.imbalance),
+        "-g", params.objective,
+        "--v-cycles", str(params.v_cycles),
+        "--pool-size", str(params.pool_size),
+        "--move-ratio", str(params.move_ratio),
+        "-s", str(params.seed),
+        "-o", compute_filename(params)])
+    #results = extract_metrics_minipart(output)
+    #save_results(params, results)
+    # No saving the results, as a solution file is generated
+
+def run_benchmark_kahypar(params):
+    if params.objective not in ["cut", "soed"]:
+      raise RuntimeError("Kahypar only supports cut and soed objectives")
+    obj = "km1" if params.objective == "soed" else "cut"
+    refine = "kway_fm_flow_km1" if params.objective == "soed" else "kway_fm_flow"
+    args = ["./kahypar_bench", "-p", "kahypar_config", "-m", "direct",
+        "-h", "data/" + params.bench + ".hgr", "-k", str(params.blocks),
+        "-e", str(params.imbalance), "-o", obj,
+        "--r-type", refine,
+        "--vcycles", str(params.v_cycles),
+        "--seed", str(params.seed),
+        "--output-file", compute_filename(params)]
+    output = subprocess.check_output(args)
+    # No saving the results, as a solution file is generated
+
+def run_benchmark(params):
+    if params.solver == "minipart":
+      run_benchmark_minipart(params)
+    elif params.solver == "kahypar":
+      run_benchmark_kahypar(params)
+    else:
+      raise RuntimeError("Unknown solver type")
 
 def save_results(params, results):
     conn = sqlite3.connect("results.db")
@@ -160,7 +204,7 @@ def run_benchmarks():
     params = list_params()
     params = filter_new_params(params)
     pool = multiprocessing.Pool(8)
-    pool.map(run_benchmark_minipart, params)
+    pool.map(run_benchmark, params)
 
 def extract_dataframe(params_to_results, objective):
     columns_params = [p for p in MinipartParams._fields if p not in ["seed", "objective"]]
@@ -185,7 +229,7 @@ def extract_dataframe(params_to_results, objective):
     return df
 
 def gather_results():
-    all_results = get_version_results('2019-05-05')
+    all_results = get_solver_results('2019-05-05')
     res = defaultdict(list)
     for data in all_results:
       params = extractParams(data)
