@@ -12,11 +12,11 @@ MinipartParams  = namedtuple("MinipartParams", ["bench", "solver", "blocks", "im
 MinipartResults = namedtuple("MinipartResults", ["cut", "connectivity", "max_degree", "daisy_chain_distance", "daisy_chain_max_degree"])
 MinipartData    = namedtuple("MinipartData", MinipartParams._fields + MinipartResults._fields)
 
-def extractParams(data):
+def extract_params(data):
     fields = [d for f, d in zip(MinipartParams._fields, data)]
     return MinipartParams(*fields)
 
-def extractResults(data):
+def extract_results(data):
     fields = data[len(MinipartParams._fields):]
     return MinipartResults(*fields)
 
@@ -34,50 +34,6 @@ def create_db():
         ''')
     conn.commit()
     c.close()
-
-def list_benchs():
-    return [ "ibm%02d" % (i,) for i in range(1,19)]
-
-def list_params_minipart():
-    params = []
-    solver = "minipart"
-    seed_opts = range(1, 7)
-    for seed in seed_opts:
-      blocks_opts = range(2, 5)
-      for blocks in blocks_opts:
-        imbalance_opts = [0.05,]
-        for imbalance in imbalance_opts:
-          objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
-          #objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
-          for objective in objective_opts:
-            for v_cycles in [1, 3, 5]:
-              for pool_size in [32,]:
-                for move_ratio in [8.0,]:
-                  for bench in list_benchs():
-                    cur = MinipartParams(bench, solver, blocks, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
-                    params.append(cur)
-    return params
-
-def list_params_kahypar():
-    params = []
-    solver = "kahypar"
-    seed_opts = range(1, 7)
-    v_cycles = 1
-    for seed in seed_opts:
-      blocks_opts = range(2, 5)
-      for blocks in blocks_opts:
-        imbalance_opts = [0.05,]
-        for imbalance in imbalance_opts:
-          objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
-          #objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
-          for objective in objective_opts:
-            for bench in list_benchs():
-              cur = MinipartParams(bench, solver, blocks, imbalance, objective, 1, None, None, seed)
-              params.append(cur)
-    return params
-
-def list_params():
-    return list_params_minipart()
 
 def get_params_result(params):
     conn = sqlite3.connect("results.db")
@@ -111,7 +67,51 @@ def filter_new_params(params):
         new_params.append(p)
     return new_params
 
-def extract_metrics_minipart(output):
+def list_benchs():
+    return [ "ibm%02d" % (i,) for i in range(1,19)]
+
+def list_params_minipart():
+    params = []
+    solver = "minipart"
+    seed_opts = range(1, 7)
+    for seed in seed_opts:
+      blocks_opts = range(2, 5)
+      for blocks in blocks_opts:
+        imbalance_opts = [0.05,]
+        for imbalance in imbalance_opts:
+          objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
+          #objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
+          for objective in objective_opts:
+            for v_cycles in [1, ]:
+              for pool_size in [32,]:
+                for move_ratio in [8.0,]:
+                  for bench in list_benchs():
+                    cur = MinipartParams(bench, solver, blocks, imbalance, objective, v_cycles, pool_size, move_ratio, seed)
+                    params.append(cur)
+    return params
+
+def list_params_kahypar():
+    params = []
+    solver = "kahypar"
+    seed_opts = range(1, 7)
+    v_cycles = 1
+    for seed in seed_opts:
+      blocks_opts = range(2, 5)
+      for blocks in blocks_opts:
+        imbalance_opts = [0.05,]
+        for imbalance in imbalance_opts:
+          objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
+          #objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
+          for objective in objective_opts:
+            for bench in list_benchs():
+              cur = MinipartParams(bench, solver, blocks, imbalance, objective, 1, None, None, seed)
+              params.append(cur)
+    return params
+
+def list_params():
+    return list_params_kahypar() + list_params_minipart()
+
+def extract_metrics(output):
     o = output.decode("utf-8")
     cut = None
     connectivity = None
@@ -151,6 +151,10 @@ def compute_filename(params):
     name += ".sol"
     return name
 
+def benchmark_done(params):
+    filename = compute_filename(params) + ".gz"
+    return os.path.isfile(filename)
+
 def run_benchmark_minipart(params):
     filename = compute_filename(params)
     output = subprocess.check_output(["./minipart_bench",
@@ -163,8 +167,6 @@ def run_benchmark_minipart(params):
         "--move-ratio", str(params.move_ratio),
         "-s", str(params.seed),
         "-o", filename + ".gz"])
-    #results = extract_metrics_minipart(output)
-    #save_results(params, results)
     # No saving the results, as a solution file is generated
 
 def run_benchmark_kahypar(params):
@@ -185,8 +187,7 @@ def run_benchmark_kahypar(params):
     # No saving the results, as a solution file is generated
 
 def run_benchmark(params):
-    filename = compute_filename(params) + ".gz"
-    if os.path.isfile(filename):
+    if benchmark_done(params):
       return
     if params.solver == "minipart":
       run_benchmark_minipart(params)
@@ -195,23 +196,44 @@ def run_benchmark(params):
     else:
       raise RuntimeError("Unknown solver type")
 
+def run_benchmarks():
+    create_db()
+    params = list_params()
+    pool = multiprocessing.Pool(8)
+    pool.map(run_benchmark, params)
+
+def eval_benchmark(params):
+    filename = compute_filename(params)
+    output = subprocess.check_output(["./minipart_bench",
+        "-i", "data/" + params.bench + ".hgr",
+        "-k", str(params.blocks),
+        "-e", str(100.0 * params.imbalance),
+        "-g", "max-degree",
+        "-f", filename + ".gz",
+        "--no-solve"])
+    return extract_metrics(output)
+
+def save_benchmark(params):
+    if benchmark_done(params):
+      results = eval_benchmark(params)
+      save_results(params, results)
+
+def save_benchmarks():
+    create_db()
+    params = list_params()
+    pool = multiprocessing.Pool(8)
+    pool.map(save_benchmark, params)
+
 def save_results(params, results):
     conn = sqlite3.connect("results.db")
     c = conn.cursor()
     data = params + results
     assert len(data) == 14
     c.execute('''
-        INSERT INTO minipart values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        INSERT OR IGNORE INTO minipart values (?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         ''', data)
     conn.commit()
     c.close()
-
-def run_benchmarks():
-    create_db()
-    params = list_params()
-    params = filter_new_params(params)
-    pool = multiprocessing.Pool(8)
-    pool.map(run_benchmark, params)
 
 def extract_dataframe(params_to_results, objective):
     columns_params = [p for p in MinipartParams._fields if p not in ["seed", "objective"]]
@@ -227,29 +249,36 @@ def extract_dataframe(params_to_results, objective):
         continue
       all_metrics = [len(res_list), ]
       for metric in ["cut", "connectivity", "max_degree"]:
-        best = min(getattr(r, metric) for r in res_list)
-        worst = max(getattr(r, metric) for r in res_list)
-        average = sum(getattr(r, metric) for r in res_list) / len(res_list)
+        metric_list = list(filter(lambda x: x is not None, [getattr(r, metric) for r in res_list]))
+        if len(metric_list) > 0:
+          best = min(getattr(r, metric) for r in res_list)
+          worst = max(getattr(r, metric) for r in res_list)
+          average = sum(getattr(r, metric) for r in res_list) / len(res_list)
+        else:
+          best = None
+          worst = None
+          average = None
         all_metrics += [best, worst, average]
       df.loc[i] = [getattr(params, c) for c in columns_params] + all_metrics
       i += 1
     return df
 
-def gather_results():
-    all_results = get_solver_results('2019-05-05')
+def gather_results(solver):
+    all_results = get_solver_results(solver)
     res = defaultdict(list)
     for data in all_results:
-      params = extractParams(data)
+      params = extract_params(data)
       params = params._replace(seed=None)
-      results = extractResults(data)
+      results = extract_results(data)
       res[params].append(results)
     cut_df = extract_dataframe(res, "cut")
-    cut_df.to_csv("report_cut.csv", index=False)
+    cut_df.to_csv("report_cut_" + solver + ".csv", index=False)
     cut_df = extract_dataframe(res, "soed")
-    cut_df.to_csv("report_connectivity.csv", index=False)
+    cut_df.to_csv("report_connectivity_" + solver + ".csv", index=False)
     cut_df = extract_dataframe(res, "max-degree")
-    cut_df.to_csv("report_max-degree.csv", index=False)
 
+#save_benchmarks()
 run_benchmarks()
-#gather_results()
+#gather_results("kahypar")
+#gather_results("minipart")
 
