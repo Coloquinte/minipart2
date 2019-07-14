@@ -6,6 +6,7 @@ import datetime
 import subprocess
 import multiprocessing
 import pandas as pd
+import os.path
 
 MinipartParams  = namedtuple("MinipartParams", ["bench", "solver", "blocks", "imbalance", "objective", "v_cycles", "pool_size", "move_ratio", "seed"])
 MinipartResults = namedtuple("MinipartResults", ["cut", "connectivity", "max_degree", "daisy_chain_distance", "daisy_chain_max_degree"])
@@ -49,7 +50,7 @@ def list_params_minipart():
           objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
           #objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"]
           for objective in objective_opts:
-            for v_cycles in [1,]:
+            for v_cycles in [1, 3, 5]:
               for pool_size in [32,]:
                 for move_ratio in [8.0,]:
                   for bench in list_benchs():
@@ -151,16 +152,17 @@ def compute_filename(params):
     return name
 
 def run_benchmark_minipart(params):
+    filename = compute_filename(params)
     output = subprocess.check_output(["./minipart_bench",
         "-i", "data/" + params.bench + ".hgr",
         "-k", str(params.blocks),
-        "-e", str(params.imbalance),
+        "-e", str(100.0 * params.imbalance),
         "-g", params.objective,
         "--v-cycles", str(params.v_cycles),
         "--pool-size", str(params.pool_size),
         "--move-ratio", str(params.move_ratio),
         "-s", str(params.seed),
-        "-o", compute_filename(params)])
+        "-o", filename + ".gz"])
     #results = extract_metrics_minipart(output)
     #save_results(params, results)
     # No saving the results, as a solution file is generated
@@ -170,17 +172,22 @@ def run_benchmark_kahypar(params):
       raise RuntimeError("Kahypar only supports cut and soed objectives")
     obj = "km1" if params.objective == "soed" else "cut"
     refine = "kway_fm_flow_km1" if params.objective == "soed" else "kway_fm_flow"
+    filename = compute_filename(params)
     args = ["./kahypar_bench", "-p", "kahypar_config", "-m", "direct",
         "-h", "data/" + params.bench + ".hgr", "-k", str(params.blocks),
         "-e", str(params.imbalance), "-o", obj,
         "--r-type", refine,
         "--vcycles", str(params.v_cycles),
         "--seed", str(params.seed),
-        "--output-file", compute_filename(params)]
+        "--output-file", filename]
     output = subprocess.check_output(args)
+    subprocess.check_output(["gzip", filename])
     # No saving the results, as a solution file is generated
 
 def run_benchmark(params):
+    filename = compute_filename(params) + ".gz"
+    if os.path.isfile(filename):
+      return
     if params.solver == "minipart":
       run_benchmark_minipart(params)
     elif params.solver == "kahypar":
