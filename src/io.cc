@@ -3,10 +3,14 @@
 #include "hypergraph.hh"
 #include "solution.hh"
 
+#include <memory>
 #include <sstream>
 #include <iostream>
 #include <algorithm>
 #include <fstream>
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/copy.hpp>
+#include <boost/iostreams/filter/gzip.hpp>
 
 using namespace std;
 
@@ -144,24 +148,78 @@ void Solution::write(ostream &s) const {
   s.flush();
 }
 
+namespace {
+bool isGzipFilename(const string &name) {
+  return name.size() >= 3 && name.compare(name.size() - 3, 3, ".gz") == 0;
+}
+}
+
 Solution Solution::readFile(const string &name) {
-  ifstream f(name);
-  return Solution::read(f);
+  if (isGzipFilename(name)) {
+    ifstream file(name, ios_base::in | ios_base::binary);
+    if (file.fail()) throw runtime_error("Unable to open the file \"" + name + "\"");
+    boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
+    in.push(boost::iostreams::gzip_decompressor());
+    in.push(file);
+    std::istream inf(&in);
+    return Solution::read(inf);
+  }
+  else {
+    ifstream file(name);
+    if (file.fail()) throw runtime_error("Unable to open the file \"" + name + "\"");
+    return Solution::read(file);
+  }
 }
 
 void Solution::writeFile(const string &name) const {
-  ofstream os(name);
-  write(os);
+  if (isGzipFilename(name)) {
+    boost::iostreams::gzip_params params;
+    params.level = 9;
+    ofstream file(name, ios_base::out | ios_base::binary | ios_base::trunc);
+    boost::iostreams::filtering_streambuf<boost::iostreams::output> out;
+    out.push(boost::iostreams::gzip_compressor(params));
+    out.push(file);
+    std::ostream outf(&out);
+    write(outf);
+  }
+  else {
+    ofstream f(name);
+    write(f);
+  }
 }
 
 Hypergraph Hypergraph::readFile(const string &name) {
-  ifstream f(name);
-  return Hypergraph::readHgr(f);
+  if (isGzipFilename(name)) {
+    ifstream file(name, ios_base::in | ios_base::binary);
+    if (file.fail()) throw runtime_error("Unable to open the file \"" + name + "\"");
+    boost::iostreams::filtering_streambuf<boost::iostreams::input> in;
+    in.push(boost::iostreams::gzip_decompressor());
+    in.push(file);
+    std::istream inf(&in);
+    return Hypergraph::readHgr(inf);
+  }
+  else {
+    ifstream file(name);
+    if (file.fail()) throw runtime_error("Unable to open the file \"" + name + "\"");
+    return Hypergraph::readHgr(file);
+  }
 }
 
 void Hypergraph::writeFile(const string &name) const {
-  ofstream os(name);
-  writeHgr(os);
+  if (isGzipFilename(name)) {
+    boost::iostreams::gzip_params params;
+    params.level = 9;
+    ofstream file(name, ios_base::out | ios_base::binary | ios_base::trunc);
+    boost::iostreams::filtering_streambuf<boost::iostreams::output> out;
+    out.push(boost::iostreams::gzip_compressor(params));
+    out.push(file);
+    std::ostream outf(&out);
+    writeHgr(outf);
+  }
+  else {
+    ofstream f(name);
+    writeHgr(f);
+  }
 }
 
 } // End namespace minipart

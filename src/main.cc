@@ -8,7 +8,6 @@
 
 #include <iostream>
 #include <iomanip>
-#include <cstdlib>
 #include <boost/program_options.hpp>
 
 using namespace std;

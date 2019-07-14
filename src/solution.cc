@@ -18,7 +18,10 @@ Solution::Solution(Index nNodes, Index nParts)
 
 Solution::Solution(std::vector<Index> parts) {
   parts_ = move(parts);
-  nParts_ = *max_element(parts_.begin(), parts_.end()) + 1;
+  if (!parts_.empty())
+    nParts_ = *max_element(parts_.begin(), parts_.end()) + 1;
+  else
+    nParts_ = 1;
 }
 
 void Solution::resizeParts(Index parts) {

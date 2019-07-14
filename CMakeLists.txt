@@ -4,8 +4,10 @@ PROJECT(MINIPART)
 
 SET(CMAKE_CXX_FLAGS "-g -Wall -std=c++14")
 
-SET(Boost_USE_STATIC_LIBS ON)
-FIND_PACKAGE(Boost COMPONENTS system filesystem iostreams program_options unit_test_framework REQUIRED)
+#SET(CMAKE_FIND_LIBRARY_SUFFIXES ".a")
+#SET(Boost_USE_STATIC_LIBS ON)
+FIND_PACKAGE(Boost REQUIRED COMPONENTS system filesystem iostreams program_options unit_test_framework)
+FIND_PACKAGE(ZLIB REQUIRED)
 
 INCLUDE_DIRECTORIES(
     ${MINIPART_SOURCE_DIR}/include
@@ -33,12 +35,16 @@ SET(SOURCES
 )
 
 add_library(libminipart ${SOURCES})
+target_link_libraries(libminipart
+  ${ZLIB_LIBRARIES}
+  ${Boost_LIBRARIES})
 
 SET(BIN_SOURCES
   src/main.cc)
 
 add_executable(minipart ${BIN_SOURCES})
 target_link_libraries(minipart
+  ${ZLIB_LIBRARIES}
   ${Boost_LIBRARIES}
   libminipart
 )
