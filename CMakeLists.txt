@@ -4,22 +4,23 @@ PROJECT(MINIPART)
 
 SET(CMAKE_CXX_FLAGS "-g -Wall -std=c++14")
 
-FIND_PACKAGE(Boost COMPONENTS system filesystem program_options unit_test_framework REQUIRED)
+SET(Boost_USE_STATIC_LIBS ON)
+FIND_PACKAGE(Boost COMPONENTS system filesystem iostreams program_options unit_test_framework REQUIRED)
 
 INCLUDE_DIRECTORIES(
     ${MINIPART_SOURCE_DIR}/include
     ${MINIPART_BINARY_DIR}
 )
 
-set (MINIPART_VERSION_NUMBER \"0.1.0\")
-string(TIMESTAMP MINIPART_BUILD_DATE \"%Y-%m-%d\")
+SET(MINIPART_VERSION_NUMBER \"0.1.1\")
+STRING(TIMESTAMP MINIPART_BUILD_DATE \"%Y-%m-%d\")
 
 configure_file (
   "${MINIPART_SOURCE_DIR}/include/config.hh.in"
   "${MINIPART_BINARY_DIR}/config.hh"
 )
 
-SET (SOURCES
+SET(SOURCES
   src/hypergraph.cc
   src/solution.cc
   src/partitioning_params.cc
@@ -33,12 +34,12 @@ SET (SOURCES
 
 add_library(libminipart ${SOURCES})
 
-SET (BIN_SOURCES
+SET(BIN_SOURCES
   src/main.cc)
 
 add_executable(minipart ${BIN_SOURCES})
 target_link_libraries(minipart
-  ${Boost_PROGRAM_OPTIONS_LIBRARY}
+  ${Boost_LIBRARIES}
   libminipart
 )
 

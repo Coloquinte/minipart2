@@ -8,7 +8,6 @@
 
 #include <iostream>
 #include <iomanip>
-#include <fstream>
 #include <cstdlib>
 #include <boost/program_options.hpp>
 
@@ -23,10 +22,10 @@ po::options_description getBaseOptions() {
                      "Input file name (.hgr)");
 
   desc.add_options()("solution,o", po::value<string>(),
-                     "Solution file");
+                     "Solution file (.sol)");
 
   desc.add_options()("initial,f", po::value<string>(),
-                     "Initial solution file");
+                     "Initial solution file (.sol)");
 
   desc.add_options()("blocks,k", po::value<Index>()->default_value(2),
                      "Number of blocks");
@@ -125,8 +124,7 @@ po::variables_map parseArguments(int argc, char **argv) {
 }
 
 Hypergraph readHypergraph(const po::variables_map &vm) {
-  ifstream f(vm["hypergraph"].as<string>());
-  Hypergraph hg = Hypergraph::readHgr(f);
+  Hypergraph hg = Hypergraph::readFile(vm["hypergraph"].as<string>());
   hg.checkConsistency();
   hg.mergeParallelHedges();
   hg.setupBlocks(
@@ -157,8 +155,7 @@ PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg)
 vector<Solution> readInitialSolutions(const po::variables_map &vm, const Hypergraph &hg) {
   vector<Solution> solutions;
   if (vm.count("initial")) {
-    ifstream f(vm["initial"].as<string>());
-    Solution sol = Solution::read(f);
+    Solution sol = Solution::readFile(vm["initial"].as<string>());
     sol.checkConsistency();
     solutions.emplace_back(sol);
   }
@@ -174,8 +171,7 @@ vector<Solution> readInitialSolutions(const po::variables_map &vm, const Hypergr
 
 void writeFinalSolution(const po::variables_map &vm, const Solution &solution) {
   if (vm.count("solution")) {
-    ofstream os(vm["solution"].as<string>());
-    solution.write(os);
+    solution.writeFile(vm["solution"].as<string>());
   }
 }
 

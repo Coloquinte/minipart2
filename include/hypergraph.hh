@@ -47,6 +47,8 @@ class Hypergraph {
   std::vector<Index> metricsPartitionDaisyChainDegree(const Solution &solution) const;
 
   // IO functions
+  static Hypergraph readFile(const std::string &name);
+  void writeFile(const std::string &name) const;
   static Hypergraph readHgr(std::istream &);
   void writeHgr(std::ostream &) const;
 

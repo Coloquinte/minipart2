@@ -25,6 +25,8 @@ class Solution {
   void resizeParts(Index parts);
 
   // IO functions
+  static Solution readFile(const std::string &name);
+  void writeFile(const std::string &name) const;
   static Solution read(std::istream &);
   void write(std::ostream &) const;
 

@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
+#include <fstream>
 
 using namespace std;
 
@@ -125,7 +126,7 @@ void Hypergraph::writeHgr(ostream &s) const {
   }
 }
 
-Solution Solution::read(std::istream &s) {
+Solution Solution::read(istream &s) {
   vector<Index> parts;
   while (s.good()) {
     Index p;
@@ -136,11 +137,31 @@ Solution Solution::read(std::istream &s) {
   return Solution(parts);
 }
 
-void Solution::write(std::ostream &s) const {
+void Solution::write(ostream &s) const {
   for (Index p : parts_) {
     s << p << "\n";
   }
   s.flush();
+}
+
+Solution Solution::readFile(const string &name) {
+  ifstream f(name);
+  return Solution::read(f);
+}
+
+void Solution::writeFile(const string &name) const {
+  ofstream os(name);
+  write(os);
+}
+
+Hypergraph Hypergraph::readFile(const string &name) {
+  ifstream f(name);
+  return Hypergraph::readHgr(f);
+}
+
+void Hypergraph::writeFile(const string &name) const {
+  ofstream os(name);
+  writeHgr(os);
 }
 
 } // End namespace minipart
