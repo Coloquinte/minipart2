@@ -17,15 +17,33 @@ class Move {
   std::int64_t budget_;
 };
 
-class SimpleMove : public Move {
+class VertexMoveRandomBlock : public Move {
  public:
-  SimpleMove(Index budget) : Move(budget) {}
+  VertexMoveRandomBlock(Index budget) : Move(budget) {}
   void run(IncrementalObjective &inc, std::mt19937 &rgen) override;
 };
 
-class EdgeMove : public Move {
+class VertexMoveBestBlock : public Move {
  public:
-  EdgeMove(Index budget) : Move(budget) {
+  VertexMoveBestBlock(Index budget) : Move(budget) {}
+  void run(IncrementalObjective &inc, std::mt19937 &rgen) override;
+};
+
+class VertexPassRandomBlock : public Move {
+ public:
+  VertexPassRandomBlock(Index budget) : Move(budget) {}
+  void run(IncrementalObjective &inc, std::mt19937 &rgen) override;
+};
+
+class VertexPassBestBlock : public Move {
+ public:
+  VertexPassBestBlock(Index budget) : Move(budget) {}
+  void run(IncrementalObjective &inc, std::mt19937 &rgen) override;
+};
+
+class EdgeMoveRandomBlock : public Move {
+ public:
+  EdgeMoveRandomBlock(Index budget) : Move(budget) {
     edgeDegreeCutoff_ = 10;
   }
   void run(IncrementalObjective &inc, std::mt19937 &rgen) override;
@@ -35,15 +53,15 @@ class EdgeMove : public Move {
   std::size_t edgeDegreeCutoff_;
 };
 
-class SimpleSwap : public Move {
+class VertexSwap : public Move {
  public:
-  SimpleSwap(Index budget) : Move(budget) {}
+  VertexSwap(Index budget) : Move(budget) {}
   void run(IncrementalObjective &inc, std::mt19937 &rgen) override;
 };
 
-class AbsorptionMove : public Move {
+class VertexAbsorptionPass : public Move {
  public:
-  AbsorptionMove(Index budget) : Move(budget) {
+  VertexAbsorptionPass(Index budget) : Move(budget) {
     nodeDegreeCutoff_ = 10;
     edgeDegreeCutoff_ = 10;
   }

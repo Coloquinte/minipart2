@@ -31,10 +31,13 @@ int64_t LocalSearchOptimizer::totalBudget() const {
 void LocalSearchOptimizer::init() {
   moves_.clear();
   double targetCount = params_.movesPerElement * params_.nNodes * (params_.nParts - 1);
-  moves_.emplace_back(make_unique<SimpleMove>(0.1 * targetCount));
-  moves_.emplace_back(make_unique<SimpleSwap>(0.1 * targetCount));
-  moves_.emplace_back(make_unique<EdgeMove>(0.1 * targetCount));
-  moves_.emplace_back(make_unique<AbsorptionMove>(0.7 * targetCount));
+  moves_.emplace_back(make_unique<VertexMoveRandomBlock>(0.1 * targetCount));
+  moves_.emplace_back(make_unique<VertexMoveBestBlock>(0.0 * targetCount));
+  moves_.emplace_back(make_unique<VertexPassRandomBlock>(0.0 * targetCount));
+  moves_.emplace_back(make_unique<VertexPassBestBlock>(0.0 * targetCount));
+  moves_.emplace_back(make_unique<VertexSwap>(0.1 * targetCount));
+  moves_.emplace_back(make_unique<EdgeMoveRandomBlock>(0.1 * targetCount));
+  moves_.emplace_back(make_unique<VertexAbsorptionPass>(0.7 * targetCount));
 }
 
 void LocalSearchOptimizer::doMove() {
