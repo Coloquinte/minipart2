@@ -1,0 +1,32 @@
+% Example .mgr (Minipart) file
+% 
+% This file format enables any number of weight for each hyperedge, node and block.
+%
+%
+% #nodes #hyperedges #blocks
+3 2 2
+%
+%
+% #weights/node #weights/hyperedge #weights/blocks
+2 1 2
+%
+%
+% 2 hyperedges
+1 3
+1 2 3
+%
+%
+% weights for the nodes (2/node here)
+100 5
+300 22
+140 10
+%
+%
+% weights for the hyperedges (1/hyperedge here)
+15
+12
+%
+%
+% weights for the blocks (2/block here)
+300 25
+200 20
