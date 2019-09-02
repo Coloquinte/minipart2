@@ -9,6 +9,30 @@
 
 namespace minipart {
 
+template<typename T>
+class Range {
+ public:
+  Range(const T *b, const T *e) : begin_(b), end_(e) {}
+  const T *begin() const { return begin_; }
+  const T *end() const { return end_; }
+  const T *cbegin() const { return begin_; }
+  const T *cend() const { return end_; }
+  std::size_t size() const { return end_ - begin_; }
+
+  bool operator==(const Range<T> &o) {
+    if (size() != o.size()) return false;
+    for (std::size_t i = 0, sz = size(); i != sz; ++i) {
+      if (begin_[i] != o.begin_[i]) return false;
+    }
+    return true;
+  }
+  bool operator!=(const Range<T> &o) { return !operator==(o); }
+
+ private:
+  const T *begin_;
+  const T *end_;
+};
+
 class Hypergraph {
  public:
   Hypergraph(Index nodeWeights=1, Index hedgeWeights=1, Index partWeights=1);
@@ -30,18 +54,18 @@ class Hypergraph {
   Index hedgeWeight (Index hedge, Index i=0) const { return hedgeData_[hedgeBegin_[hedge] + i]; }
   Index partWeight  (Index part,  Index i=0) const { return partData_[part * nPartWeights_ + i]; }
 
-  // TODO: use iterators instead of a copy
-  const std::vector<Index> hedgeNodes(Index hedge) const {
+  Range<Index> hedgeNodes(Index hedge) const {
+    const Index *ptr = hedgeData_.data();
     Index b = hedgeBegin_[hedge] + nHedgeWeights_;
     Index e = hedgeBegin_[hedge+1];
-    return std::vector<Index>(hedgeData_.begin() + b, hedgeData_.begin() + e);
+    return Range<Index>(ptr + b, ptr + e);
   }
 
-  // TODO: use iterators instead of a copy
-  const std::vector<Index> nodeHedges(Index node) const {
+  Range<Index> nodeHedges(Index node) const {
+    const Index *ptr = nodeData_.data();
     Index b = nodeBegin_[node] + nNodeWeights_;
     Index e = nodeBegin_[node+1];
-    return std::vector<Index>(nodeData_.begin() + b, nodeData_.begin() + e);
+    return Range<Index>(ptr + b, ptr + e);
   }
 
   // Metrics

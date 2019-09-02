@@ -114,7 +114,7 @@ void Hypergraph::checkConsistency() const {
   if (nPartWeights_ * nParts_ != (Index) partData_.size()) throw runtime_error("Inconsistent part data size");
 
   for (Index n = 0; n != nNodes_; ++n) {
-    const vector<Index> node = nodeHedges(n);
+    Range<Index> node = nodeHedges(n);
     for (Index hedge : node) {
       if (hedge < 0 || hedge >= nHedges())
         throw runtime_error("Invalid hedge value");
@@ -124,7 +124,7 @@ void Hypergraph::checkConsistency() const {
         throw runtime_error("Duplicate hedges in a node");
   }
   for (Index h = 0; h != nHedges_; ++h) {
-    const vector<Index> hedge = hedgeNodes(h);
+    Range<Index> hedge = hedgeNodes(h);
     for (Index node : hedge) {
       if (node < 0 || node >= nNodes())
         throw runtime_error("Invalid node value");
