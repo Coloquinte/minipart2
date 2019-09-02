@@ -18,7 +18,7 @@ po::options_description getBaseOptions() {
   po::options_description desc("Options");
 
   desc.add_options()("hypergraph,i", po::value<string>(),
-                     "Input file name (.hgr)");
+                     "Input file name (.hgr or .mgr)");
 
   desc.add_options()("solution,o", po::value<string>(),
                      "Solution file (.sol)");
@@ -42,8 +42,6 @@ po::options_description getBaseOptions() {
                      "Random seed");
 
   desc.add_options()("help,h", "Print this help");
-
-  desc.add_options()("version", "Show the program version");
 
   return desc;
 }
@@ -74,7 +72,16 @@ po::options_description getBlackboxOptions() {
 
 po::options_description getHiddenOptions() {
   po::options_description desc("Hidden options");
+
   desc.add_options()("no-solve", "Skip the solving phase");
+
+  desc.add_options()("export", po::value<string>(),
+                     "Write the hypergraph (.hgr or .mgr)");
+
+  desc.add_options()("version", "Show the program version");
+
+  desc.add_options()("help-all", "Print this help, including hidden options");
+
   return desc;
 }
 
@@ -149,6 +156,11 @@ PartitioningParams readParams(const po::variables_map &vm, const Hypergraph &hg)
     .nPins = hg.nPins(),
     .nParts = hg.nParts()
   };
+}
+
+void writeHypergraph(const po::variables_map &vm, const Hypergraph &hg) {
+  if (!vm.count("export")) return;
+  hg.writeFile(vm["export"].as<string>());
 }
 
 vector<Solution> readInitialSolutions(const po::variables_map &vm, const Hypergraph &hg) {
@@ -310,7 +322,8 @@ int main(int argc, char **argv) {
   vector<Solution> initialSolutions = readInitialSolutions(vm, hg);
 
   initialReport(hg, params, initialSolutions);
-  if (vm.count("no-solve")) return 0;
+  writeHypergraph(vm, hg);
+  if (vm.count("no-solve") || vm.count("export"))  return 0;
 
   Solution solution = BlackboxOptimizer::run(hg, params, *objectivePtr, initialSolutions);
   finalReport(hg, params, {solution});

@@ -110,8 +110,12 @@ void VertexSwap::run(IncrementalObjective &inc, mt19937 &rgen) {
 
 void EdgeMoveRandomBlock::run(IncrementalObjective &inc, mt19937 &rgen) {
   assert (this->budget_ > 0);
-  initialStatus_.clear();
+  if (inc.nHedges() == 0) {
+    --this->budget_;
+    return;
+  }
 
+  initialStatus_.clear();
   uniform_int_distribution<Index> edgeDist(0, inc.nHedges()-1);
   uniform_int_distribution<Index> partDist(0, inc.nParts()-1);
   Index hedge = edgeDist(rgen);

@@ -14,6 +14,7 @@ LocalSearchOptimizer::LocalSearchOptimizer(IncrementalObjective &inc, const Part
 }
 
 void LocalSearchOptimizer::run() {
+  assert (inc_.nNodes() > 0);
   init();
   while (totalBudget() > 0) {
     doMove();
