@@ -32,6 +32,7 @@ SET(SOURCES
   src/local_search_optimizer.cc
   src/blackbox_optimizer.cc
   src/io.cc
+  src/metrics.cc
 )
 
 add_library(libminipart ${SOURCES})

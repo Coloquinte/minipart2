@@ -96,7 +96,6 @@ vector<Index> computeDaisyChainPartitionDegrees(const Hypergraph &hypergraph, co
   return ret;
 }
 
-
 Index computeCut(const Hypergraph &hypergraph, const vector<Index> &hedgeDegrees) {
   Index ret = 0;
   for (Index hedge = 0; hedge < hypergraph.nHedges(); ++hedge) {
