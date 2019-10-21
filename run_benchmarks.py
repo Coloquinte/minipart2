@@ -91,16 +91,17 @@ def list_params_minipart(args):
     solver = "minipart"
     seed_opts = list_seeds(args)
     for seed in seed_opts:
-      blocks_opts = [2, 4]
-      for blocks in blocks_opts:
-        imbalance_opts = [0.05,]
-        for imbalance in imbalance_opts:
-          objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"] if blocks > 2 else ["cut"]
-          for objective in objective_opts:
-            for v_cycles in [1, ]:
-              for pool_size in [32,]:
-                for move_ratio in [8.0,]:
-                  for bench in list_benchs(args):
+      imbalance_opts = [0.05,]
+      for imbalance in imbalance_opts:
+        for v_cycles in [1, ]:
+          for pool_size in [32,]:
+            for move_ratio in [8.0,]:
+              for bench in list_benchs(args):
+                blocks_opts = [2, 4]
+                for blocks in blocks_opts:
+                  # objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"] if blocks > 2 else ["cut"]
+                  objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
+                  for objective in objective_opts:
                     cur = MinipartParams(bench_to_name(bench), bench_to_input_file(args, bench), "",
                                          solver, blocks, imbalance, objective,
                                          v_cycles, pool_size, move_ratio, seed)
