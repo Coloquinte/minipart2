@@ -345,7 +345,7 @@ def gather_results(args):
 parser = argparse.ArgumentParser()
 parser.add_argument("--data", help="Directory for the hypergraphs", default="data")
 #parser.add_argument("--solutions", help="Directory for the solutions", default="solutions")
-parser.add_argument("--seeds", help="Number of random seeds to test", default=1, type=int)
+parser.add_argument("--seeds", help="Number of random seeds to test", default=2, type=int)
 parser.add_argument("--minipart", help="Run Minipart", action="store_true")
 parser.add_argument("--kahypar", help="Run Kahypar", action="store_true")
 parser.add_argument("--save_db", help="Save results to database", action="store_true")
