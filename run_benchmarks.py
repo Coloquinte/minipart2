@@ -240,7 +240,7 @@ def run_benchmark(params):
 def run_benchmarks(args):
     create_db()
     params = list_params(args)
-    pool = multiprocessing.Pool(8)
+    pool = multiprocessing.Pool(args.threads)
     pool.map(run_benchmark, params)
 
 def eval_benchmark(params):
@@ -346,6 +346,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument("--data", help="Directory for the hypergraphs", default="data")
 #parser.add_argument("--solutions", help="Directory for the solutions", default="solutions")
 parser.add_argument("--seeds", help="Number of random seeds to test", default=2, type=int)
+parser.add_argument("--threads", help="Number of threads", default=24, type=int)
 parser.add_argument("--minipart", help="Run Minipart", action="store_true")
 parser.add_argument("--kahypar", help="Run Kahypar", action="store_true")
 parser.add_argument("--save_db", help="Save results to database", action="store_true")
