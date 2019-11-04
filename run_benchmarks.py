@@ -99,8 +99,8 @@ def list_params_minipart(args):
               for bench in list_benchs(args):
                 blocks_opts = [2, 4]
                 for blocks in blocks_opts:
-                  # objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"] if blocks > 2 else ["cut"]
-                  objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
+                  objective_opts = ["cut", "soed", "max-degree", "daisy-chain-distance", "daisy-chain-max-degree"] if blocks > 2 else ["cut"]
+                  # objective_opts = ["cut", "soed"] if blocks > 2 else ["cut"]
                   for objective in objective_opts:
                     cur = MinipartParams(bench_to_name(bench), bench_to_input_file(args, bench), "",
                                          solver, blocks, imbalance, objective,
